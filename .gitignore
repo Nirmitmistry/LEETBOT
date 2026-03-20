@@ -4,3 +4,4 @@ data/raw/
 data/clean/
 data/failed/
 __pycache__/
+.vscode/
