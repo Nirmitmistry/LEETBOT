@@ -1,28 +1,9 @@
-"""
-run.py
-------
-Master script. Runs the full Phase 3 pipeline in order:
-
-  Step 1 — fetch.py   : scrape LeetCode → data/raw/
-  Step 2 — clean.py   : transform raw → data/clean/
-  Step 3 — upload.py  : push clean data → MongoDB Atlas
-
-Run this file to do everything in one go:
-  python scraper/run.py
-
-Or run individual steps if one fails:
-  python scraper/fetch.py
-  python scraper/clean.py
-  python scraper/upload.py
-"""
-
 from scraper.upload import run as run_upload
 from scraper.clean import run as run_clean
 from scraper.fetch import run as run_fetch
 import sys
 from pathlib import Path
 
-# Make sure imports resolve from the project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 

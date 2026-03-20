@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 
 # ── paths ──────────────────────────────────────────────────────────────────────
-BASE_DIR   = Path(__file__).resolve().parent.parent
-RAW_DIR    = BASE_DIR / "data" / "raw"
-CLEAN_DIR  = BASE_DIR / "data" / "clean"
+BASE_DIR = Path(__file__).resolve().parent.parent
+RAW_DIR = BASE_DIR / "data" / "raw"
+CLEAN_DIR = BASE_DIR / "data" / "clean"
 FAILED_DIR = BASE_DIR / "data" / "failed"
 CLEAN_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -34,9 +34,9 @@ def strip_html(text: str) -> str:
     text = text.replace("&lt;",  "<")
     text = text.replace("&gt;",  ">")
     text = text.replace("&amp;", "&")
-    text = text.replace("&nbsp;"," ")
+    text = text.replace("&nbsp;", " ")
     text = text.replace("&#39;", "'")
-    text = text.replace("&quot;",'"')
+    text = text.replace("&quot;", '"')
     # Collapse excessive blank lines
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
@@ -54,15 +54,15 @@ def parse_examples(content_html: str) -> list[dict]:
     pre_blocks = re.findall(r"<pre>(.*?)</pre>", content_html or "", re.DOTALL)
 
     for block in pre_blocks:
-        text   = strip_html(block).strip()
-        lines  = [l.strip() for l in text.split("\n") if l.strip()]
+        text = strip_html(block).strip()
+        lines = [l.strip() for l in text.split("\n") if l.strip()]
         example = {}
 
         for line in lines:
             if line.lower().startswith("input:"):
-                example["input"]       = line[6:].strip()
+                example["input"] = line[6:].strip()
             elif line.lower().startswith("output:"):
-                example["output"]      = line[7:].strip()
+                example["output"] = line[7:].strip()
             elif line.lower().startswith("explanation:"):
                 example["explanation"] = line[12:].strip()
 
@@ -120,10 +120,12 @@ def infer_complexity(editorial: str) -> tuple[str, str]:
     if not editorial:
         return "unknown", "unknown"
 
-    time_match  = re.search(r"[Tt]ime\s+[Cc]omplexity[:\s]+O\(([^)]+)\)", editorial)
-    space_match = re.search(r"[Ss]pace\s+[Cc]omplexity[:\s]+O\(([^)]+)\)", editorial)
+    time_match = re.search(
+        r"[Tt]ime\s+[Cc]omplexity[:\s]+O\(([^)]+)\)", editorial)
+    space_match = re.search(
+        r"[Ss]pace\s+[Cc]omplexity[:\s]+O\(([^)]+)\)", editorial)
 
-    time_c  = f"O({time_match.group(1)})"  if time_match  else "unknown"
+    time_c = f"O({time_match.group(1)})" if time_match else "unknown"
     space_c = f"O({space_match.group(1)})" if space_match else "unknown"
     return time_c, space_c
 
@@ -157,7 +159,8 @@ def build_hints(official_hints: list[str], editorial: str) -> dict:
             editorial,
             re.DOTALL | re.IGNORECASE,
         )
-        hints["stage_3"] = approach_match.group(0)[:600].strip() if approach_match else editorial[:500].strip()
+        hints["stage_3"] = approach_match.group(
+            0)[:600].strip() if approach_match else editorial[:500].strip()
     else:
         hints["stage_3"] = ""
 
@@ -175,18 +178,19 @@ def clean_problem(raw: dict) -> dict | None:
     Convert one raw bundle into a clean problem document matching our schema.
     Returns None if the raw data is too broken to clean.
     """
-    detail   = raw.get("detail_data", {})
-    sol_raw  = raw.get("solutions_raw", {})
+    detail = raw.get("detail_data", {})
+    sol_raw = raw.get("solutions_raw", {})
 
     # These fields are required — if missing the problem is broken
     problem_id = raw.get("problem_id")
-    slug       = detail.get("titleSlug") or raw.get("list_data", {}).get("titleSlug")
-    title      = detail.get("title")
+    slug = detail.get("titleSlug") or raw.get("list_data", {}).get("titleSlug")
+    title = detail.get("title")
     if not all([problem_id, slug, title]):
         return None
 
     content_html = detail.get("content", "")
-    editorial    = strip_html(detail.get("solution", {}).get("content", "")) if detail.get("solution") else ""
+    editorial = strip_html(detail.get("solution", {}).get(
+        "content", "")) if detail.get("solution") else ""
 
     time_c, space_c = infer_complexity(editorial)
 
@@ -203,10 +207,13 @@ def clean_problem(raw: dict) -> dict | None:
         "tags": [
             t["slug"] for t in detail.get("topicTags", [])
         ],
+
+        # EDITED: Added `and q["titleSlug"].split("-")[0].isdigit()` to the if-condition
+        # to prevent ValueError when encountering slugs that don't start with numbers (like "3sum").
         "similar_problem_ids": [
             int(q["titleSlug"].split("-")[0])
             for q in json.loads(detail.get("similarQuestions", "[]") or "[]")
-            if q.get("titleSlug")
+            if q.get("titleSlug") and q["titleSlug"].split("-")[0].isdigit()
         ][:5],  # cap at 5
 
         # ── content ───────────────────────────────────────
@@ -238,7 +245,7 @@ def clean_problem(raw: dict) -> dict | None:
         "complexity": {
             "time":        time_c,
             "space":       space_c,
-            "explanation": "",  # filled in by LLM later during ingestion
+            "explanation": "",
         },
 
         # ── metadata ──────────────────────────────────────
@@ -251,16 +258,16 @@ def clean_problem(raw: dict) -> dict | None:
 
 def run():
     raw_files = sorted(RAW_DIR.glob("*.json"), key=lambda p: int(p.stem))
-    total     = len(raw_files)
-    success   = 0
-    skipped   = 0
-    failed    = 0
+    total = len(raw_files)
+    success = 0
+    skipped = 0
+    failed = 0
 
     print(f"Cleaning {total} raw files...\n")
 
     for raw_path in raw_files:
-        problem_id  = int(raw_path.stem)
-        clean_path  = CLEAN_DIR / f"{problem_id}.json"
+        problem_id = int(raw_path.stem)
+        clean_path = CLEAN_DIR / f"{problem_id}.json"
 
         raw = None
         try:

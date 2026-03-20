@@ -1,12 +1,3 @@
-"""
-upload.py
----------
-Reads all clean JSON files from data/clean/ and uploads them to MongoDB Atlas.
-
-Run this AFTER clean.py has finished.
-Uses upsert so it's safe to re-run — existing documents are updated, not duplicated.
-"""
-
 import json
 import os
 from pathlib import Path

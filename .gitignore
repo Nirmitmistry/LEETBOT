@@ -1,2 +1,6 @@
 .env
 venv
+data/raw/
+data/clean/
+data/failed/
+__pycache__/

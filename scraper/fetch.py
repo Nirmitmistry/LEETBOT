@@ -6,15 +6,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
-BASE_DIR   = Path(__file__).resolve().parent.parent
-RAW_DIR    = BASE_DIR / "data" / "raw"
+BASE_DIR = Path(__file__).resolve().parent.parent
+RAW_DIR = BASE_DIR / "data" / "raw"
 FAILED_DIR = BASE_DIR / "data" / "failed"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 FAILED_DIR.mkdir(parents=True, exist_ok=True)
 
-LEETCODE_GRAPHQL  = "https://leetcode.com/graphql"
-SCRAPE_DELAY      = float(os.getenv("SCRAPE_DELAY", 1.5))
-LEETCODE_SESSION  = os.getenv("LEETCODE_SESSION", "")
+LEETCODE_GRAPHQL = "https://leetcode.com/graphql"
+SCRAPE_DELAY = float(os.getenv("SCRAPE_DELAY", 1.5))
+LEETCODE_SESSION = os.getenv("LEETCODE_SESSION", "")
 
 # Headers that make requests look like a normal browser session
 HEADERS = {
@@ -27,7 +27,6 @@ HEADERS = {
 # ── GraphQL queries ────────────────────────────────────────────────────────────
 
 # Query 1: Fetch the master list of all problems (paginated)
-# Returns: id, title, slug, difficulty, tags, acceptance rate, is_premium
 PROBLEM_LIST_QUERY = """
 query problemList($skip: Int, $limit: Int) {
   problemsetQuestionList: questionList(
@@ -54,7 +53,6 @@ query problemList($skip: Int, $limit: Int) {
 """
 
 # Query 2: Fetch full detail for one problem by its slug
-# Returns: statement, examples, constraints, hints, similar questions
 PROBLEM_DETAIL_QUERY = """
 query problemDetail($titleSlug: String!) {
   question(titleSlug: $titleSlug) {
@@ -77,26 +75,9 @@ query problemDetail($titleSlug: String!) {
 }
 """
 
-# Query 3: Fetch top community solutions for one problem in one language
-# Returns: code of top accepted solutions
-SOLUTIONS_QUERY = """
-query communitySolutions($questionSlug: String!, $languageName: String!, $skip: Int) {
-  questionSolutions(
-    filters: { questionSlug: $questionSlug, languageName: $languageName, orderBy: HOT }
-    limit: 3
-    skip: $skip
-  ) {
-    solutions {
-      title
-      lang
-      langVerboseName
-      content
-      solutionTags { name }
-      reactionSummary { count }
-    }
-  }
-}
-"""
+# NOTE: Solutions query removed — LeetCode's questionSolutions endpoint
+# requires a premium account and silently returns [] for free accounts.
+# Solutions will be generated via Claude API during the ingestion phase (Phase 7).
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -143,18 +124,20 @@ def fetch_problem_list() -> list[dict]:
     """
     print("Fetching problem list from LeetCode...")
     all_problems = []
-    page_size    = 100
-    skip         = 0
+    page_size = 100
+    skip = 0
 
     while True:
-        resp = graphql_post(PROBLEM_LIST_QUERY, {"skip": skip, "limit": page_size})
+        resp = graphql_post(PROBLEM_LIST_QUERY, {
+                            "skip": skip, "limit": page_size})
         if not resp:
-            print(f"  Failed to fetch page at skip={skip}. Stopping list fetch.")
+            print(
+                f"  Failed to fetch page at skip={skip}. Stopping list fetch.")
             break
 
-        data      = resp.get("data", {}).get("problemsetQuestionList", {})
+        data = resp.get("data", {}).get("problemsetQuestionList", {})
         questions = data.get("questions", [])
-        total     = data.get("total", 0)
+        total = data.get("total", 0)
 
         # Filter out premium problems
         free = [q for q in questions if not q.get("isPaidOnly", False)]
@@ -183,46 +166,26 @@ def fetch_problem_detail(slug: str) -> dict | None:
     return resp.get("data", {}).get("question")
 
 
-def fetch_solutions(slug: str, language: str) -> list[str]:
-    """
-    Fetch the top 3 community solutions for a problem in one language.
-    Returns a list of code strings (may be empty if none found).
-    """
-    resp = graphql_post(SOLUTIONS_QUERY, {
-        "questionSlug": slug,
-        "languageName": language,
-        "skip": 0,
-    })
-    if not resp:
-        return []
-
-    solutions = (
-        resp.get("data", {})
-            .get("questionSolutions", {})
-            .get("solutions", [])
-    )
-    # Return just the code content of each solution
-    return [s.get("content", "") for s in solutions if s.get("content")]
-
-
 # ── step 3: scrape everything and save raw files ───────────────────────────────
 
 def scrape_all(problem_list: list[dict]) -> None:
     """
     Main loop. For each problem:
-      - Skip if raw file already exists
-      - Fetch detail + solutions in 3 languages
+      - Skip if raw file already exists (safe to re-run)
+      - Fetch detail only (solutions skipped — premium endpoint)
       - Save full raw bundle to data/raw/{id}.json
       - On failure, save error to data/failed/{id}.json
+
+    Solutions will be generated via Claude API in Phase 7.
+    This removes ~4.5s of wasted delay per problem (~2.5hrs saved for 2000 problems).
     """
-    languages = ["python3", "java", "cpp"]
-    total     = len(problem_list)
+    total = len(problem_list)
 
     for i, problem in enumerate(problem_list, 1):
         problem_id = int(problem["questionFrontendId"])
-        slug       = problem["titleSlug"]
-        raw_path   = RAW_DIR / f"{problem_id}.json"
-        fail_path  = FAILED_DIR / f"{problem_id}.json"
+        slug = problem["titleSlug"]
+        raw_path = RAW_DIR / f"{problem_id}.json"
+        fail_path = FAILED_DIR / f"{problem_id}.json"
 
         # Skip if already scraped successfully
         if raw_path.exists():
@@ -243,23 +206,17 @@ def scrape_all(problem_list: list[dict]) -> None:
             time.sleep(SCRAPE_DELAY)
             continue
 
-        # Fetch solutions per language
-        solutions_raw = {}
-        for lang in languages:
-            time.sleep(SCRAPE_DELAY)  # polite delay between each language request
-            solutions_raw[lang] = fetch_solutions(slug, lang)
-            print(f"  {lang}: {len(solutions_raw[lang])} solutions fetched")
-
         # Bundle everything into one raw object
+        # solutions_raw is intentionally empty — will be filled in Phase 7 via Claude
         raw_bundle = {
             "problem_id":    problem_id,
-            "list_data":     problem,   # from the problem list query
-            "detail_data":   detail,    # from the detail query
-            "solutions_raw": solutions_raw,
+            "list_data":     problem,
+            "detail_data":   detail,
+            "solutions_raw": {"python3": [], "java": [], "cpp": []},
         }
 
         save_json(raw_path, raw_bundle)
-        print(f"  Saved to data/raw/{problem_id}.json")
+        print(f"  Saved → data/raw/{problem_id}.json")
         time.sleep(SCRAPE_DELAY)
 
     print("\nScraping complete.")
@@ -272,7 +229,7 @@ def scrape_all(problem_list: list[dict]) -> None:
 def run():
     if not LEETCODE_SESSION:
         print("WARNING: LEETCODE_SESSION not set in .env.")
-        print("Hints and some editorials may not be accessible.\n")
+        print("Hints and some content may not be accessible.\n")
     problem_list = fetch_problem_list()
     scrape_all(problem_list)
 
