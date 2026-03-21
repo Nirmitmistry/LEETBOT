@@ -5,3 +5,4 @@ data/clean/
 data/failed/
 __pycache__/
 .vscode/
+chroma_db/
