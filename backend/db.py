@@ -23,8 +23,8 @@ async def connect_db() -> None:
     if not mongo_uri:
         raise RuntimeError("MONGO_URI is not set in .env")
     _mongo_client = MongoClient(mongo_uri)
-    _db = _mongo_client["leetbot_db"]
-    print(" MongoDB connected — leetbot_db")
+    _db = _mongo_client["LEETBOT"]
+    print(" MongoDB connected — LEETBOT")
 
     # Chroma
     chroma_path = os.getenv("CHROMA_PATH", "./chroma_db")
