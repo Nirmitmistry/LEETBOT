@@ -47,7 +47,6 @@ async def search_problems(
 
 @router.get("/{slug}", response_model=ProblemDetail)
 async def get_problem(slug: str, db: Database = Depends(get_db)):
-    """Fetch a single problem by slug from MongoDB."""
     doc = db["problems"].find_one({"slug": slug}, {"_id": 0})
     if not doc:
         raise HTTPException(
