@@ -44,26 +44,35 @@ def chunk_problem(doc: dict) -> list[Document]:
 
     #  Chunk 6: Editorial
     editorial = doc.get("editorial", {})
-    editorial_text = editorial.get(
-        "content", "") if isinstance(editorial, dict) else ""
-    chunks.append(Document(
-        page_content=editorial_text or "No editorial available.",
-        metadata={**base_meta, "chunk_type": "editorial",
-                  "hint_stage": 3, "doc_id": f"{pid}_editorial"},
-    ))
+    editorial_text = ""
+
+    # Handle cases where editorial might be a dict or a direct string
+    if isinstance(editorial, dict):
+        editorial_text = editorial.get("content", "")
+    elif isinstance(editorial, str):
+         editorial_text = editorial
+
+    # ONLY chunk if editorial text exists
+    if editorial_text and isinstance(editorial_text, str) and editorial_text.strip():
+        chunks.append(Document(
+            page_content=editorial_text.strip(),
+            metadata={**base_meta, "chunk_type": "editorial",
+                "hint_stage": 3, "doc_id": f"{pid}_editorial"},
+        ))
 
     # Chunk 7: Solutions
     solutions = doc.get("solutions", {})
     solution_parts = []
-    for lang in ["python", "java", "cpp"]:
-        code = solutions.get(lang, "")
-        if code:
-            solution_parts.append(f"### {lang.upper()} solution:\n{code}")
+    if isinstance(solutions, dict):
+        for lang in ["python", "java", "cpp"]:
+            code = solutions.get(lang, "")
+            if code and isinstance(code, str) and code.strip():
+                solution_parts.append(f"### {lang.upper()} solution:\n{code.strip()}")
 
-    chunks.append(Document(
-        page_content="\n\n".join(
-            solution_parts) or "No solutions available yet.",
-        metadata={**base_meta, "chunk_type": "solutions",
-                  "hint_stage": 5, "doc_id": f"{pid}_solutions"},
-    ))
+    # ONLY chunk if at least one solution language exists
+    if solution_parts:  
+        chunks.append(Document(
+            page_content="\n\n".join(solution_parts),
+            metadata={**base_meta, "chunk_type": "solutions", "hint_stage": 5, "doc_id": f"{pid}_solutions"},
+        ))
     return chunks
