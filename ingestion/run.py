@@ -3,45 +3,34 @@ import time
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from ingestion.chunker import chunk_problem
-from ingestion.embedder import get_embedder, estimate_cost
-from ingestion.indexer import get_vectorstore, upsert_documents, collection_stats, test_query
+from ingestion.embedder import get_embedder
+from ingestion.indexer import get_vectorstore, upsert_documents, collection_stats
 
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI", "")
 DB_NAME = "LEETBOT"
 COLLECTION = "problems"
-BATCH_SIZE = 50   # problems per batch (= 350 chunks per OpenAI call)
+BATCH_SIZE = 50   # problems per batch
 
 
 def run():
-    print("=" * 60)
-    print("  LeetBot Ingestion Pipeline — Phase 5")
-    print("=" * 60)
-
-    # ── 0. Pre-flight checks ──────────────────────────────────────────────────
     if not MONGO_URI:
         raise ValueError("MONGO_URI not set in .env")
     if not os.getenv("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY not set in .env")
 
-    # ── 1. Connect to MongoDB ─────────────────────────────────────────────────
-    print("\n[1/5] Connecting to MongoDB...")
+    print("\nConnecting to MongoDB...")
     client = MongoClient(MONGO_URI)
     collection = client[DB_NAME][COLLECTION]
     total = collection.count_documents({})
     print(f"      Found {total:,} problems in MongoDB")
 
-    # ── 2. Set up embedder + vectorstore ──────────────────────────────────────
-    print("\n[2/5] Setting up embedder + Chroma vectorstore...")
-    estimate_cost(total)
+    print("\n Setting up embedder + Chroma vectorstore...")
     embedder = get_embedder()
     vectorstore = get_vectorstore(embedder)
     collection_stats(vectorstore)
-
-    # ── 3. Main ingestion loop ────────────────────────────────────────────────
-    print(f"\n[3/5] Starting ingestion in batches of {BATCH_SIZE} problems...")
-    print("-" * 60)
+    print(f"\n Starting ingestion in batches of {BATCH_SIZE} problems...")
 
     processed = 0
     skipped = 0
@@ -91,22 +80,11 @@ def run():
 
     # ── 4. Final stats ────────────────────────────────────────────────────────
     elapsed = time.time() - start_time
-    print("\n" + "=" * 60)
-    print(f"[4/5] Ingestion complete in {elapsed:.1f}s")
+    print(f" Ingestion complete in {elapsed:.1f}s")
     print(f"      Processed : {processed:,} problems")
     print(f"      Skipped   : {skipped:,} (already indexed)")
     print(f"      Failed    : {failed:,}")
     collection_stats(vectorstore)
-
-    # ── 5. Test query to verify retrieval works ───────────────────────────────
-    print("\n[5/5] Running test queries...")
-    test_query(vectorstore, "two sum array hash table easy")
-    test_query(vectorstore, "binary tree level order traversal")
-    test_query(vectorstore, "dynamic programming longest subsequence")
-
-    print("Pipeline finished. Chroma DB is ready at:",
-          os.getenv("CHROMA_PATH", "./chroma_db"))
-    client.close()
 
 
 def _process_batch(
@@ -116,10 +94,6 @@ def _process_batch(
     processed:   int,
     total:       int,
 ) -> None:
-    """
-    Chunks + upserts one batch of problems into Chroma.
-    Handles errors per-problem so one failure doesn't stop the whole run.
-    """
     all_chunks = []
 
     for problem, slug in zip(batch_docs, batch_slugs):
