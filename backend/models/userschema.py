@@ -32,5 +32,3 @@ class UpdateProfile(BaseModel):
     username:             str | None = Field(None, min_length=3, max_length=30)
 
 
-class SessionCreateRequest(BaseModel):
-    slug: str = Field(..., example="two-sum")

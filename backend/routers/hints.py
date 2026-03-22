@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
-
+from backend.auth.dependecies import getcurrentuser
 router = APIRouter()
 MAX_STAGE = 5
 
@@ -59,7 +59,6 @@ def _call_ollama(problem: dict, stage: int) -> str:
     )
     chain = _PROMPT | llm | StrOutputParser()
 
-    # Format constraints
     constraints = problem.get("constraints", [])
     if isinstance(constraints, str):
         constraints = [c.strip()
@@ -67,7 +66,6 @@ def _call_ollama(problem: dict, stage: int) -> str:
     constraints_text = "\n".join(
         f"- {c}" for c in constraints) or "None provided"
 
-    # Format examples
     examples = problem.get("examples", [])
     if isinstance(examples, list):
         examples_text = "\n".join(
@@ -88,17 +86,27 @@ def _call_ollama(problem: dict, stage: int) -> str:
 
 
 @router.post("/{slug}", response_model=HintResponse)
-async def get_next_hint(slug: str, body: HintRequest, db: Database = Depends(get_db)):
+async def get_next_hint(
+    slug: str,
+    body: HintRequest,
+    db: Database = Depends(get_db),
+    current_user: dict = Depends(getcurrentuser)
+):
     try:
         oid = ObjectId(body.session_id)
     except Exception:
         raise HTTPException(
             status_code=400, detail="Invalid session_id format")
 
-    session = db["hint_sessions"].find_one({"_id": oid, "slug": slug})
+    session = db["hint_sessions"].find_one({
+        "_id": oid,
+        "slug": slug,
+        "user_id": current_user["user_id"]
+    })
+
     if not session:
         raise HTTPException(
-            status_code=404, detail=f"Session '{body.session_id}' not found for '{slug}'")
+            status_code=404, detail=f"Session '{body.session_id}' not found for '{slug}' or unauthorized access.")
 
     current_stage = session.get("current_stage", 0)
     if current_stage >= MAX_STAGE:
@@ -110,9 +118,10 @@ async def get_next_hint(slug: str, body: HintRequest, db: Database = Depends(get
     if not problem:
         raise HTTPException(
             status_code=404, detail=f"Problem '{slug}' not found")
-    
+
     hint_text = _extract_field(problem, _STAGE_FIELD[next_stage])
     source = "db"
+
     if not hint_text:
         try:
             hint_text = _call_ollama(problem, next_stage)

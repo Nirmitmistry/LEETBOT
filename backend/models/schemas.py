@@ -94,3 +94,6 @@ class RecommendResponse(BaseModel):
     based_on:    str
     recommended: list[ProblemSummary]
     reason:      str
+
+class SessionCreateRequest(BaseModel):
+    slug: str = Field(..., example="two-sum")

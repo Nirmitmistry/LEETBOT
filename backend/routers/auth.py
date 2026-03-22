@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from backend.db import get_db
 from backend.auth.hashing import hash_password, verify_password
-from backend.auth.jwt import create_access_token
+from backend.auth.jwt import createaccesstoken
 from backend.models.userschema import UserRegister, UserLogin, TokenResponse, UserResponse
 
 router = APIRouter()
@@ -40,7 +40,7 @@ async def register(body: UserRegister, db: Database = Depends(get_db)):
     result = db["users"].insert_one(doc)
     doc["_id"] = result.inserted_id
 
-    token = create_access_token(str(result.inserted_id), body.email)
+    token = createaccesstoken(str(result.inserted_id), body.email)
     return TokenResponse(access_token=token, user=_fmt_user(doc))
 
 
@@ -51,5 +51,5 @@ async def login(body: UserLogin, db: Database = Depends(get_db)):
         raise HTTPException(
             status_code=401, detail="Invalid email or password")
 
-    token = create_access_token(str(user["_id"]), user["email"])
+    token = createaccesstoken(str(user["_id"]), user["email"])
     return TokenResponse(access_token=token, user=_fmt_user(user))
