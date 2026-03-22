@@ -53,7 +53,7 @@ def _extract_field(doc: dict, field_path: str) -> str | None:
 
 def _call_ollama(problem: dict, stage: int) -> str:
     llm = ChatOllama(
-        model=os.getenv("OLLAMA_LLM_MODEL", "qwen2.5-coder:7b"),
+        model=os.getenv("OLLAMA_MODEL_NAME", "qwen2.5-coder:7b"),
         base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         temperature=0.3,
     )

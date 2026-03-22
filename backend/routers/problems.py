@@ -1,9 +1,4 @@
-"""
-routers/problems.py
 
-GET /problems/{slug}   → fetch one problem from MongoDB
-GET /problems/search   → semantic search via Chroma
-"""
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pymongo.database import Database
@@ -14,18 +9,7 @@ from langchain_chroma import Chroma
 
 router = APIRouter()
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _to_list(value) -> list:
-    """
-    Normalise a MongoDB field that may be stored as a string or a list.
-      - list   → return as-is
-      - string → split on newlines, strip each line, drop empty lines
-      - other  → return []
-    """
     if isinstance(value, list):
         return value
     if isinstance(value, str):
@@ -44,9 +28,6 @@ def _to_summary(doc: dict) -> ProblemSummary:
     )
 
 
-# ---------------------------------------------------------------------------
-# Routes  (search MUST come before /{slug} to avoid "search" being a slug)
-# ---------------------------------------------------------------------------
 
 @router.get("/search", response_model=SearchResponse)
 async def search_problems(
@@ -57,7 +38,6 @@ async def search_problems(
     db:         Database = Depends(get_db),
     chroma:     Chroma = Depends(get_chroma),
 ):
-    """Semantic search over problem statements via Chroma embeddings."""
     where_filter = {"hint_stage": 0}
     if difficulty:
         where_filter["difficulty"] = difficulty
@@ -73,7 +53,6 @@ async def search_problems(
 
 @router.get("/{slug}", response_model=ProblemDetail)
 async def get_problem(slug: str, db: Database = Depends(get_db)):
-    """Fetch a single problem by slug from MongoDB."""
     doc = db["problems"].find_one({"slug": slug}, {"_id": 0})
     if not doc:
         raise HTTPException(
@@ -90,7 +69,6 @@ async def get_problem(slug: str, db: Database = Depends(get_db)):
     elif isinstance(raw_c, str) and raw_c.strip():
         complexity = ComplexityInfo(time=raw_c, space="Unknown")
 
-    # examples must be list[dict] — if stored as a string, wrap it
     raw_examples = doc.get("examples", [])
     if isinstance(raw_examples, str):
         raw_examples = [{"raw": raw_examples}]
