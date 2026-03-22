@@ -6,3 +6,5 @@ data/failed/
 __pycache__/
 .vscode/
 chroma_db/
+.txt
+requirements.txt
