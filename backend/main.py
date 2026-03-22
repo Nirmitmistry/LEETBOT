@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from backend.db import connect_db, close_db
-from backend.routers import problems, hints, recommend, complexity, sessions
+from backend.routers import problems, hints, recommend, complexity, sessions,auth, users
 
 
 @asynccontextmanager
@@ -22,8 +22,11 @@ app = FastAPI(
 app.include_router(problems.router,   prefix="/problems",   tags=["problems"])
 app.include_router(hints.router,      prefix="/hints",      tags=["hints"])
 app.include_router(recommend.router,  prefix="/recommend",  tags=["recommend"])
-app.include_router(complexity.router, prefix="/complexity", tags=["complexity"])
+app.include_router(complexity.router, prefix="/complexity",
+                   tags=["complexity"])
 app.include_router(sessions.router,   prefix="/sessions",   tags=["sessions"])
+app.include_router(auth.router,       prefix="/auth",        tags=["auth"])
+app.include_router(users.router,      prefix="/users",       tags=["users"])
 
 
 @app.get("/", tags=["health"])
