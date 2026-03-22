@@ -11,7 +11,6 @@ class ComplexityInfo(BaseModel):
 
 
 class ProblemSummary(BaseModel):
-    """Lightweight problem card — used in list/search results."""
     slug:            str
     title:           str
     difficulty:      str
@@ -21,7 +20,6 @@ class ProblemSummary(BaseModel):
 
 
 class ProblemDetail(ProblemSummary):
-    """Full problem — returned by GET /problems/{slug}."""
     problem_statement: str
     constraints:       list[str]
     examples:          list[dict[str, Any]]

@@ -1,15 +1,14 @@
 import os
-from openai import OpenAI
-
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from bson import ObjectId
-
+from langchain_ollama import ChatOllama
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
 
 router = APIRouter()
-
 MAX_STAGE = 5
 
 _STAGE_FIELD = {
@@ -17,16 +16,30 @@ _STAGE_FIELD = {
     2: "hints.stage_2",
     3: "hints.stage_3",
     4: "hints.stage_4",
-    5: "solutions.python",   
+    5: "solutions.python",
 }
 
-_STAGE_PROMPT = {
-    1: "Give a very subtle first hint — just nudge the user toward the right problem-solving pattern. Do NOT reveal the approach or any code.",
-    2: "Give a clearer hint about the algorithmic approach (e.g. sliding window, two pointers, DP). Still no code.",
-    3: "Explain the core algorithm step by step in plain English. Mention key data structures. No code yet.",
-    4: "Give a detailed walkthrough of the solution logic including edge cases. Pseudocode is fine.",
+_STAGE_INSTRUCTION = {
+    1: "Give a very subtle first hint — just nudge toward the right pattern. No code, no approach.",
+    2: "Give a clearer hint about the algorithmic approach (e.g. sliding window, two pointers, DP). No code.",
+    3: "Explain the algorithm step by step in plain English. Mention key data structures. No code.",
+    4: "Give a detailed walkthrough including edge cases. Pseudocode is fine.",
     5: "Provide a clean, well-commented Python solution with time and space complexity analysis.",
 }
+
+_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", "You are an expert LeetCode tutor. Be concise, educational, and follow the instruction exactly."),
+    ("human", (
+        "Problem: {title}\n\n"
+        "Statement:\n{statement}\n\n"
+        "Constraints:\n{constraints}\n\n"
+        "Examples:\n{examples}\n\n"
+        "---\n"
+        "The student is at hint stage {stage} of 5.\n"
+        "{instruction}\n"
+        "Respond directly. No preamble."
+    )),
+])
 
 
 def _extract_field(doc: dict, field_path: str) -> str | None:
@@ -38,57 +51,44 @@ def _extract_field(doc: dict, field_path: str) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
-def _call_openai(problem: dict, stage: int) -> str:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    context_parts = [f"Problem: {problem.get('title', 'Unknown')}"]
+def _call_ollama(problem: dict, stage: int) -> str:
+    llm = ChatOllama(
+        model=os.getenv("OLLAMA_LLM_MODEL", "qwen2.5-coder:7b"),
+        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        temperature=0.3,
+    )
+    chain = _PROMPT | llm | StrOutputParser()
 
-    if stmt := problem.get("problem_statement"):
-        context_parts.append(f"Statement:\n{stmt}")
+    # Format constraints
+    constraints = problem.get("constraints", [])
+    if isinstance(constraints, str):
+        constraints = [c.strip()
+                       for c in constraints.splitlines() if c.strip()]
+    constraints_text = "\n".join(
+        f"- {c}" for c in constraints) or "None provided"
 
-    if constraints := problem.get("constraints"):
-        context_parts.append("Constraints:\n" +
-                             "\n".join(f"- {c}" for c in constraints))
-
-    if examples := problem.get("examples"):
-        ex_text = "\n".join(
+    # Format examples
+    examples = problem.get("examples", [])
+    if isinstance(examples, list):
+        examples_text = "\n".join(
             f"Input: {e.get('input', '')}  Output: {e.get('output', '')}"
             for e in examples[:2]
         )
-        context_parts.append(f"Examples:\n{ex_text}")
+    else:
+        examples_text = str(examples) if examples else "None provided"
 
-    context = "\n\n".join(context_parts)
-    instruction = _STAGE_PROMPT[stage]
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a LeetCode tutor. Be concise and educational.",
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"{context}\n\n"
-                    f"---\n"
-                    f"The student is at hint stage {stage} of 5.\n"
-                    f"{instruction}"
-                ),
-            },
-        ],
-    )
-
-    return response.choices[0].message.content
+    return chain.invoke({
+        "title":       problem.get("title", "Unknown"),
+        "statement":   problem.get("problem_statement", ""),
+        "constraints": constraints_text,
+        "examples":    examples_text,
+        "stage":       stage,
+        "instruction": _STAGE_INSTRUCTION[stage],
+    })
 
 
 @router.post("/{slug}", response_model=HintResponse)
-async def get_next_hint(
-    slug: str,
-    body: HintRequest,
-    db:   Database = Depends(get_db),
-):
-    # 1. Fetch and validate session
+async def get_next_hint(slug: str, body: HintRequest, db: Database = Depends(get_db)):
     try:
         oid = ObjectId(body.session_id)
     except Exception:
@@ -98,47 +98,35 @@ async def get_next_hint(
     session = db["hint_sessions"].find_one({"_id": oid, "slug": slug})
     if not session:
         raise HTTPException(
-            status_code=404,
-            detail=f"Session '{body.session_id}' not found for problem '{slug}'",
-        )
+            status_code=404, detail=f"Session '{body.session_id}' not found for '{slug}'")
 
     current_stage = session.get("current_stage", 0)
-
     if current_stage >= MAX_STAGE:
         raise HTTPException(
-            status_code=400,
-            detail="All hint stages already unlocked. No further hints available.",
-        )
+            status_code=400, detail="All hint stages already unlocked.")
 
     next_stage = current_stage + 1
-
-    # 2. Fetch problem from MongoDB
     problem = db["problems"].find_one({"slug": slug})
     if not problem:
         raise HTTPException(
             status_code=404, detail=f"Problem '{slug}' not found")
-
-    # 3. Try MongoDB first, fall back to Claude
-    field_path = _STAGE_FIELD[next_stage]
-    hint_text = _extract_field(problem, field_path)
+    
+    hint_text = _extract_field(problem, _STAGE_FIELD[next_stage])
     source = "db"
-
     if not hint_text:
-        # MongoDB doesn't have this content — ask Claude
         try:
-            hint_text = _call_openai(problem, next_stage)
+            hint_text = _call_ollama(problem, next_stage)
             source = "llm"
+            db["problems"].update_one(
+                {"slug": slug},
+                {"$set": {_STAGE_FIELD[next_stage]: hint_text}},
+            )
         except Exception as e:
             raise HTTPException(
-                status_code=502,
-                detail=f"MongoDB content missing and fallback failed: {e}",
-            )
+                status_code=502, detail=f"LLM fallback failed: {e}")
 
-    # 4. Persist updated stage
     db["hint_sessions"].update_one(
-        {"_id": oid},
-        {"$set": {"current_stage": next_stage}},
-    )
+        {"_id": oid}, {"$set": {"current_stage": next_stage}})
 
     return HintResponse(
         slug=slug,
