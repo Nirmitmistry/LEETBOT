@@ -1,5 +1,5 @@
 export const createSession = (API, slug) =>
-  API.post('/sessions', { problem_slug: slug })
+  API.post('/sessions', { slug })
 
 export const getMySessions = (API) =>
   API.get('/sessions/me')

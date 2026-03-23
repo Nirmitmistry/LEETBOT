@@ -9,14 +9,15 @@ from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
 from backend.auth.dependecies import getcurrentuser
 router = APIRouter()
-MAX_STAGE = 5
+MAX_STAGE = 6
 
 _STAGE_FIELD = {
     1: "hints.stage_1",
     2: "hints.stage_2",
     3: "hints.stage_3",
     4: "hints.stage_4",
-    5: "solutions.python",
+    5: "hints.stage_5",
+    6: "solutions.python",
 }
 
 _STAGE_INSTRUCTION = {
@@ -24,7 +25,8 @@ _STAGE_INSTRUCTION = {
     2: "Give a clearer hint about the algorithmic approach (e.g. sliding window, two pointers, DP). No code.",
     3: "Explain the algorithm step by step in plain English. Mention key data structures. No code.",
     4: "Give a detailed walkthrough including edge cases. Pseudocode is fine.",
-    5: "Provide a clean, well-commented Python solution with time and space complexity analysis.",
+    5: "Give a final detailed walkthrough of the approach with edge cases. No code.",
+    6: "Provide a clean, well-commented C++ solution with time and space complexity analysis and a clear editorial explanation.",
 }
 
 _PROMPT = ChatPromptTemplate.from_messages([

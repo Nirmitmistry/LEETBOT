@@ -27,6 +27,15 @@ def _to_summary(doc: dict) -> ProblemSummary:
         is_premium=doc.get("is_premium", False),
     )
 
+@router.get("", response_model=SearchResponse)
+async def get_all_problems(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Database = Depends(get_db)
+):
+    cursor = db["problems"].find({}, {"_id": 0}).skip(skip).limit(limit)
+    results = [_to_summary(p) for p in cursor]
+    return SearchResponse(results=results, query="")
 
 
 @router.get("/search", response_model=SearchResponse)
