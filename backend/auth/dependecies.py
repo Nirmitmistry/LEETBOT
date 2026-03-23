@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pymongo.database import Database
 from jose import JWTError
+from bson import ObjectId
 from backend.db import get_db
 from backend.auth.jwt import decodeaccesstoken
 
@@ -21,7 +22,15 @@ async def getcurrentuser(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = db["users"].find_one({"_id": payload["user_id"]}, {"password_hash": 0})
+    try:
+        oid = ObjectId(payload["user_id"])
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token",
+        )
+
+    user = db["users"].find_one({"_id": oid}, {"password_hash": 0})
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -30,3 +39,4 @@ async def getcurrentuser(
 
     user["user_id"] = str(user["_id"])
     return user
+

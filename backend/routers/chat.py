@@ -4,7 +4,11 @@ from typing import Optional
 import httpx
 import os
 
-from auth.dependecies import getcurrentuser
+from backend.auth.dependecies import getcurrentuser
+
+from pymongo.database import Database
+from langchain_chroma import Chroma
+from backend.db import get_db, get_chroma
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -23,10 +27,6 @@ class ChatRequest(BaseModel):
     problem_title: Optional[str] = None
     problem_description: Optional[str] = None
 
-
-from pymongo.database import Database
-from langchain_chroma import Chroma
-from backend.db import get_db, get_chroma
 
 @router.post("")
 async def chat(
@@ -62,7 +62,7 @@ async def chat(
     for msg in req.messages:
         ollama_messages.append({"role": msg.role, "content": msg.content})
 
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=120) as client:
         response = await client.post(
             f"{OLLAMA_BASE_URL}/api/chat",
             json={
@@ -72,6 +72,10 @@ async def chat(
             }
         )
         data = response.json()
+        if "message" not in data:
+            error_msg = data.get("error", f"Unexpected Ollama response: {str(data)[:200]}")
+            from fastapi import HTTPException
+            raise HTTPException(status_code=502, detail=f"Ollama error: {error_msg}")
         reply = data["message"]["content"]
 
     return {"reply": reply}

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from backend.db import connect_db, close_db
-from backend.routers import problems, hints, recommend, complexity, sessions, auth, users
+from backend.routers import problems, hints, recommend, complexity, sessions, auth, users, chat
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -38,6 +38,7 @@ app.include_router(complexity.router, prefix="/complexity", tags=["complexity"])
 app.include_router(sessions.router,   prefix="/sessions",   tags=["sessions"])
 app.include_router(auth.router,       prefix="/auth",        tags=["auth"])
 app.include_router(users.router,      prefix="/users",       tags=["users"])
+app.include_router(chat.router,       tags=["chat"])
 
 
 @app.get("/", tags=["health"])

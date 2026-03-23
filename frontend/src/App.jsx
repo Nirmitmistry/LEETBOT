@@ -20,7 +20,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           {/* Protected Routes inside App Shell Layout */}
           <Route element={<Layout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

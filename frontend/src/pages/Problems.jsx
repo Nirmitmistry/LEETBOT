@@ -72,8 +72,8 @@ export default function Problems() {
               <tbody>
                 {problems.length > 0 ? (
                   problems.map((prob) => (
-                    <tr 
-                      key={prob.slug || prob.title} 
+                    <tr
+                      key={prob.slug || prob.title}
                       className="problem-row"
                       onClick={() => handleRowClick(prob)}
                     >

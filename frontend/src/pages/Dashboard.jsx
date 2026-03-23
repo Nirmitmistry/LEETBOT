@@ -25,7 +25,7 @@ export default function Dashboard() {
   // Derived stats
   const solvedSet = new Set(user?.solved_problems || []);
   const attemptedSet = new Set(user?.attempted_problems || []);
-  
+
   const totalSolved = solvedSet.size;
   const totalAttempted = attemptedSet.size;
   const solveRate = totalAttempted > 0 ? Math.round((totalSolved / totalAttempted) * 100) : 0;
@@ -117,8 +117,8 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="progress-track">
-                    <div 
-                      className={`progress-fill ${diffLower}`} 
+                    <div
+                      className={`progress-fill ${diffLower}`}
                       style={{ width: `${percent}%` }}
                     ></div>
                   </div>

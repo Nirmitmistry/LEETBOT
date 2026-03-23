@@ -9,7 +9,7 @@ import './Chat.css';
 
 function Message({ msg, userAvatar }) {
   const isUser = msg.role === 'user';
-  
+
   return (
     <div className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
       <div className="message-content-wrapper">
@@ -18,7 +18,7 @@ function Message({ msg, userAvatar }) {
             userAvatar
           ) : (
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.038-1.901l-2.609-2.636a5.055 5.055 0 00-3.849-1.593 5.073 5.073 0 00-3.849 1.593l-4.306 4.38C1.112 12.97.9 13.627.9 14.337s.195 1.394.662 1.86l4.332 4.364c1.07 1.07 2.496 1.593 3.849 1.593s2.779-.523 3.849-1.593l2.697-2.607c.514-.514.496-1.365-.039-1.9s-1.386-.553-1.9-.039l-.248-.085z" fill="currentColor"/>
+              <path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.038-1.901l-2.609-2.636a5.055 5.055 0 00-3.849-1.593 5.073 5.073 0 00-3.849 1.593l-4.306 4.38C1.112 12.97.9 13.627.9 14.337s.195 1.394.662 1.86l4.332 4.364c1.07 1.07 2.496 1.593 3.849 1.593s2.779-.523 3.849-1.593l2.697-2.607c.514-.514.496-1.365-.039-1.9s-1.386-.553-1.9-.039l-.248-.085z" fill="currentColor" />
             </svg>
           )}
         </div>
@@ -35,8 +35,8 @@ export default function Chat() {
   const location = useLocation();
   const problemContext = location.state?.problemContext || {};
 
-  const userAvatar = user?.username 
-    ? user.username.substring(0, 2).toUpperCase() 
+  const userAvatar = user?.username
+    ? user.username.substring(0, 2).toUpperCase()
     : user?.email?.substring(0, 2).toUpperCase() || 'U';
 
   const [messages, setMessages] = useState([
@@ -50,7 +50,7 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -112,7 +112,7 @@ export default function Chat() {
   const handleGetHint = async () => {
     if (!problemContext.slug || !sessionId || loading) return;
     setLoading(true);
-    
+
     // Add optimistic user message to context
     const text = "Can I get a hint or see the solution approach?";
     const newMessages = [...messages, { role: 'user', content: text }];
@@ -120,15 +120,15 @@ export default function Chat() {
 
     try {
       const res = await getHint(API, problemContext.slug, sessionId);
-      const stageText = res.data.stage === 6 
-        ? "🌟 **Editorial & Solution (Stage 6)**:\n" 
+      const stageText = res.data.stage === 6
+        ? "🌟 **Editorial & Solution (Stage 6)**:\n"
         : `💡 **Hint ${res.data.stage} of 6**:\n`;
-        
+
       setMessages([...newMessages, { role: 'assistant', content: stageText + res.data.hint }]);
     } catch (err) {
-      const errorMsg = err.response?.data?.detail === "All hint stages already unlocked." 
-          ? "You've already unlocked all the hints and the solution!"
-          : "Failed to fetch hint.";
+      const errorMsg = err.response?.data?.detail === "All hint stages already unlocked."
+        ? "You've already unlocked all the hints and the solution!"
+        : "Failed to fetch hint.";
       setMessages([...newMessages, { role: 'assistant', content: errorMsg }]);
     } finally {
       setLoading(false);
@@ -174,12 +174,12 @@ export default function Chat() {
           {problemContext.title ? `Chat — ${problemContext.title}` : 'Coding Assistant'}
         </h1>
         <p className="chat-subtitle">Powered by qwen2.5-coder:7b</p>
-        
+
         {/* Action Buttons for Contextual Tools */}
         <div className="chat-header-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
           {problemContext.slug && sessionId && (
-            <button 
-              onClick={handleGetHint} 
+            <button
+              onClick={handleGetHint}
               disabled={loading}
               className="action-btn hint-btn"
               style={{ padding: '0.4rem 0.8rem', background: 'rgba(255, 161, 22, 0.15)', color: '#ffa116', border: '1px solid #ffa116', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
@@ -187,8 +187,8 @@ export default function Chat() {
               💡 Progress Hint / Solution
             </button>
           )}
-          <button 
-            onClick={handleAnalyzeComplexity} 
+          <button
+            onClick={handleAnalyzeComplexity}
             disabled={loading || !input.trim()}
             className="action-btn complexity-btn"
             style={{ padding: '0.4rem 0.8rem', background: 'rgba(0, 184, 163, 0.15)', color: '#00b8a3', border: '1px solid #00b8a3', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
@@ -210,7 +210,7 @@ export default function Chat() {
             <div className="message-content-wrapper">
               <div className="avatar assistant-avatar">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.038-1.901l-2.609-2.636a5.055 5.055 0 00-3.849-1.593 5.073 5.073 0 00-3.849 1.593l-4.306 4.38C1.112 12.97.9 13.627.9 14.337s.195 1.394.662 1.86l4.332 4.364c1.07 1.07 2.496 1.593 3.849 1.593s2.779-.523 3.849-1.593l2.697-2.607c.514-.514.496-1.365-.039-1.9s-1.386-.553-1.9-.039l-.248-.085z" fill="currentColor"/>
+                  <path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.038-1.901l-2.609-2.636a5.055 5.055 0 00-3.849-1.593 5.073 5.073 0 00-3.849 1.593l-4.306 4.38C1.112 12.97.9 13.627.9 14.337s.195 1.394.662 1.86l4.332 4.364c1.07 1.07 2.496 1.593 3.849 1.593s2.779-.523 3.849-1.593l2.697-2.607c.514-.514.496-1.365-.039-1.9s-1.386-.553-1.9-.039l-.248-.085z" fill="currentColor" />
                 </svg>
               </div>
               <div className="message-bubble">
