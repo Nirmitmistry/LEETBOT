@@ -8,9 +8,9 @@ function Message({ msg, userAvatar }) {
   const isUser = msg.role === 'user';
   
   return (
-    <div className={\`message-row \${isUser ? 'user-row' : 'assistant-row'}\`}>
+    <div className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
       <div className="message-content-wrapper">
-        <div className={\`avatar \${isUser ? 'user-avatar' : 'assistant-avatar'}\`}>
+        <div className={`avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
           {isUser ? (
             userAvatar
           ) : (
@@ -40,7 +40,7 @@ export default function Chat() {
     {
       role: 'assistant',
       content: problemContext.title
-        ? \`Hey! I can see you're working on **\${problemContext.title}**. What do you need help with?\`
+        ? `Hey! I can see you're working on **${problemContext.title}**. What do you need help with?`
         : "Hey! I'm your coding assistant. Ask me anything about DSA, algorithms, or LeetCode problems.",
     },
   ]);
@@ -59,7 +59,7 @@ export default function Chat() {
 
   const adjustTextareaHeight = (e) => {
     e.target.style.height = 'auto';
-    e.target.style.height = \`\${Math.min(e.target.scrollHeight, 160)}px\`;
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
   };
 
   const sendMessage = async () => {
@@ -101,7 +101,7 @@ export default function Chat() {
       {/* Header */}
       <div className="chat-header">
         <h1 className="chat-title">
-          {problemContext.title ? \`Chat — \${problemContext.title}\` : 'Coding Assistant'}
+          {problemContext.title ? `Chat — ${problemContext.title}` : 'Coding Assistant'}
         </h1>
         <p className="chat-subtitle">Powered by qwen2.5-coder:7b</p>
       </div>

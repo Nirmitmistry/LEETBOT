@@ -15,16 +15,15 @@ _chroma: Chroma | None = None
 
 
 async def connect_db() -> None:
-    """Open MongoDB connection and initialise Chroma vectorstore."""
     global _mongo_client, _db, _chroma
-
     # MongoDB
     mongo_uri = os.getenv("MONGO_URI")
     if not mongo_uri:
         raise RuntimeError("MONGO_URI is not set in .env")
     _mongo_client = MongoClient(mongo_uri)
     _db = _mongo_client["LEETBOT"]
-    print(" MongoDB connected — LEETBOT")
+    _mongo_client.admin.command('ping')
+    print(" MongoDB pinged and connected!")
 
     # Chroma
     chroma_path = os.getenv("CHROMA_PATH", "./chroma_db")
@@ -62,6 +61,7 @@ def get_chroma() -> Chroma:
         raise RuntimeError(
             "Chroma not initialised — connect_db() was never called")
     return _chroma
+
 
 if __name__ == "__main__":
     asyncio.run(connect_db())

@@ -111,15 +111,15 @@ export default function Dashboard() {
               return (
                 <div key={diff} className="diff-item">
                   <div className="diff-header">
-                    <span className={\`diff-label \${diffLower}\`}>{diff}</span>
+                    <span className={`diff-label ${diffLower}`}>{diff}</span>
                     <div className="diff-stats">
                       <span>{solved}</span> / {total || '-'}
                     </div>
                   </div>
                   <div className="progress-track">
                     <div 
-                      className={\`progress-fill \${diffLower}\`} 
-                      style={{ width: \`\${percent}%\` }}
+                      className={`progress-fill ${diffLower}`} 
+                      style={{ width: `${percent}%` }}
                     ></div>
                   </div>
                 </div>

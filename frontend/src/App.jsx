@@ -7,6 +7,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Problems from "./pages/Problems";
 import Profile from "./pages/Profile";
+import Chat from "./pages/Chat";
+import Layout from "./components/Layout";
 import "./App.css";
 
 const App = () => {
