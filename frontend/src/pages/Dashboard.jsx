@@ -12,7 +12,7 @@ export default function Dashboard() {
     const fetchProblems = async () => {
       try {
         const res = await getAllProblems(API);
-        setProblems(res.data || []);
+        setProblems(res.data.results || []);
       } catch (err) {
         console.error('Failed to fetch problems', err);
       } finally {

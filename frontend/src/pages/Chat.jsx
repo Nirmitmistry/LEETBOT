@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
 import { createSession } from '../api/sessions';
 import { getHint } from '../api/hints';
-import { analyzeComplexity } from '../api/comlexity';
+import { analyzeComplexity } from '../api/complexity';
 import { useLocation } from 'react-router-dom';
 import './Chat.css';
 
@@ -184,9 +184,9 @@ export default function Chat() {
               className="action-btn hint-btn"
               style={{ padding: '0.4rem 0.8rem', background: 'rgba(255, 161, 22, 0.15)', color: '#ffa116', border: '1px solid #ffa116', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
             >
-              💡 Progress Hint / Solution
+              💡 Next Hint
             </button>
-          )}
+          )}tr
           <button
             onClick={handleAnalyzeComplexity}
             disabled={loading || !input.trim()}
