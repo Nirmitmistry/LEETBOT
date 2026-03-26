@@ -72,8 +72,19 @@ export function AppProvider({ children }) {
     toast.success('Logged out');
   };
 
+  const refreshUser = async () => {
+    try {
+      const { data } = await API.get('/users/me');
+      setUser(data);
+      localStorage.setItem('leetbot_user', JSON.stringify(data));
+      return data;
+    } catch (err) {
+      console.error('Failed to refresh user', err);
+    }
+  };
+
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, API }),
+    () => ({ user, setUser, token, loading, login, register, logout, refreshUser, API }),
     [user, token, loading]
   );
 

@@ -4,7 +4,9 @@ import { sendChatMessage } from '../api/chat';
 import { createSession } from '../api/sessions';
 import { getHint } from '../api/hints';
 import { analyzeComplexity } from '../api/complexity';
+import { markSolved, markAttempted } from '../api/users';
 import { useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import './Chat.css';
 
 function Message({ msg, userAvatar }) {
@@ -31,7 +33,7 @@ function Message({ msg, userAvatar }) {
 }
 
 export default function Chat() {
-  const { API, user } = useAuth();
+  const { API, user, setUser } = useAuth();
   const location = useLocation();
   const problemContext = location.state?.problemContext || {};
 
@@ -166,6 +168,30 @@ export default function Chat() {
     }
   };
 
+  const handleMarkSolved = async () => {
+    if (!problemContext.slug) return;
+    try {
+      const res = await markSolved(API, problemContext.slug);
+      setUser(res.data);
+      localStorage.setItem('leetbot_user', JSON.stringify(res.data));
+      toast.success(`Marked "${problemContext.title}" as solved!`);
+    } catch (err) {
+      toast.error('Failed to mark as solved');
+    }
+  };
+
+  const handleMarkAttempted = async () => {
+    if (!problemContext.slug) return;
+    try {
+      const res = await markAttempted(API, problemContext.slug);
+      setUser(res.data);
+      localStorage.setItem('leetbot_user', JSON.stringify(res.data));
+      toast.success(`Marked "${problemContext.title}" as attempted!`);
+    } catch (err) {
+      toast.error('Failed to mark as attempted');
+    }
+  };
+
   return (
     <div className="chat-container">
       {/* Header */}
@@ -176,7 +202,7 @@ export default function Chat() {
         <p className="chat-subtitle">Powered by qwen2.5-coder:7b</p>
 
         {/* Action Buttons for Contextual Tools */}
-        <div className="chat-header-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+        <div className="chat-header-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {problemContext.slug && sessionId && (
             <button
               onClick={handleGetHint}
@@ -186,7 +212,7 @@ export default function Chat() {
             >
               💡 Next Hint
             </button>
-          )}tr
+          )}
           <button
             onClick={handleAnalyzeComplexity}
             disabled={loading || !input.trim()}
@@ -196,6 +222,24 @@ export default function Chat() {
           >
             📊 Analyze Complexity
           </button>
+          {problemContext.slug && (
+            <>
+              <button
+                onClick={handleMarkSolved}
+                className="action-btn"
+                style={{ padding: '0.4rem 0.8rem', background: 'rgba(0, 184, 163, 0.15)', color: '#00b8a3', border: '1px solid #00b8a3', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                ✅ Mark Solved
+              </button>
+              <button
+                onClick={handleMarkAttempted}
+                className="action-btn"
+                style={{ padding: '0.4rem 0.8rem', background: 'rgba(255, 192, 30, 0.15)', color: '#ffc01e', border: '1px solid #ffc01e', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                🔄 Mark Attempted
+              </button>
+            </>
+          )}
         </div>
       </div>
 
