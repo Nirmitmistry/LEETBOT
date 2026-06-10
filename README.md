@@ -1,8 +1,8 @@
-# LeetBot 🤖
+# LeetBot 
 
 LeetBot is a full-stack, Retrieval-Augmented Generation (RAG) based LeetCode assistant. It is designed to provide intelligent hints, complexity analysis, and tailored problem recommendations to help users improve their algorithmic problem-solving skills.
 
-## 🌟 Features
+##  Features
 
 * **Intelligent Hints:** Get context-aware hints for LeetCode problems without seeing the direct solution, powered by RAG.
 * **Complexity Analysis:** Analyze time and space complexity for your solutions.
@@ -10,7 +10,7 @@ LeetBot is a full-stack, Retrieval-Augmented Generation (RAG) based LeetCode ass
 * **User Authentication & Sessions:** Track your progress, chat history, and active problem-solving sessions.
 * **Custom Data Pipeline:** Built-in web scrapers and ingestion scripts to maintain an up-to-date vector database of LeetCode problems.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 **Frontend**
 * **Framework:** React 19 + Vite
@@ -24,7 +24,7 @@ LeetBot is a full-stack, Retrieval-Augmented Generation (RAG) based LeetCode ass
 * **AI / Embeddings:** OpenAI Embeddings (RAG pipeline)
 * **Authentication:** JWT-based auth
 
-## 📁 Project Structure
+## Project Structure
 
 The repository is organized into four main functional areas:
 
