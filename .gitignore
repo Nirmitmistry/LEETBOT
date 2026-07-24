@@ -27,6 +27,4 @@ chroma_db/
 .idea/
 
 # Misc
-*.txt
-requirements.txt
 scraper/
