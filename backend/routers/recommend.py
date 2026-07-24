@@ -1,11 +1,11 @@
-import os
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
-from bson import ObjectId
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_chroma import Chroma
+
+from backend.config import settings
 from backend.db import get_db, get_chroma
 from backend.auth.dependecies import getcurrentuser
 from backend.models.schemas import RecommendRequest, RecommendResponse, ProblemSummary
@@ -42,17 +42,13 @@ def _to_summary(doc: dict) -> ProblemSummary:
     )
 
 
-def _call_ollama(
-    source: dict,
-    recommended: list[dict],
-    user: dict,
-) -> str:
+def _call_ollama(source: dict, recommended: list[dict], user: dict) -> str:
     if not recommended:
         return "No similar problems found."
 
     llm = ChatOllama(
-        model=os.getenv("OLLAMA_MODEL_NAME", "qwen2.5-coder:7b"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        model=settings.OLLAMA_MODEL_NAME,
+        base_url=settings.OLLAMA_BASE_URL,
         temperature=0.4,
     )
     chain = _PROMPT | llm | StrOutputParser()
@@ -66,8 +62,7 @@ def _call_ollama(
 
     source_tags = source.get("tags", [])
     if isinstance(source_tags, str):
-        source_tags = [t.strip()
-                       for t in source_tags.splitlines() if t.strip()]
+        source_tags = [t.strip() for t in source_tags.splitlines() if t.strip()]
 
     return chain.invoke({
         "solved":           ", ".join(user.get("solved_problems", [])[-10:]) or "none",
@@ -88,39 +83,31 @@ async def recommend_problems(
 ):
     source = db["problems"].find_one({"slug": body.slug})
     if not source:
-        raise HTTPException(
-            status_code=404, detail=f"Problem '{body.slug}' not found")
+        raise HTTPException(status_code=404, detail=f"Problem '{body.slug}' not found")
 
     solved_set = set(current_user.get("solved_problems", []))
     attempted_set = set(current_user.get("attempted_problems", []))
 
-    # 1. Get similar_problem_ids from MongoDB
     similar_ids = source.get("similar_problem_ids", [])
     if isinstance(similar_ids, str):
-        similar_ids = [s.strip()
-                       for s in similar_ids.splitlines() if s.strip()]
+        similar_ids = [s.strip() for s in similar_ids.splitlines() if s.strip()]
 
-    # 2. Semantic search via Chroma for additional candidates
     chroma_docs = chroma.similarity_search(
         query=source.get("problem_statement", body.slug),
         k=10,
         filter={"hint_stage": 0},
     )
     chroma_slugs = [
-        d.metadata.get("slug") for d in chroma_docs
+        d.metadata.get("slug")
+        for d in chroma_docs
         if d.metadata.get("slug") and d.metadata.get("slug") != body.slug
     ]
 
-    # 3. Merge both candidate lists, deduplicate
     all_candidates = list(dict.fromkeys(similar_ids + chroma_slugs))
-
-    # 4. Filter out already solved problems
     all_candidates = [s for s in all_candidates if s not in solved_set]
 
-    # 5. Build MongoDB query — prefer not attempted either, fall back if needed
     not_attempted = [s for s in all_candidates if s not in attempted_set]
-    final_candidates = not_attempted if len(
-        not_attempted) >= body.top_k else all_candidates
+    final_candidates = not_attempted if len(not_attempted) >= body.top_k else all_candidates
 
     query: dict = {"slug": {"$in": final_candidates}}
     if body.difficulty:
@@ -137,8 +124,4 @@ async def recommend_problems(
         user=current_user,
     )
 
-    return RecommendResponse(
-        based_on=body.slug,
-        recommended=results,
-        reason=reason,
-    )
+    return RecommendResponse(based_on=body.slug, recommended=results, reason=reason)

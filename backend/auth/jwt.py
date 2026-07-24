@@ -1,23 +1,23 @@
-import os
-from datetime import datetime, timedelta,timezone
-from jose import jwt,JWTError
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
 
-SECRET_KEY = os.getenv("JWT_SECRET")
-ALGORITHM = "HS256"
-EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", 1440))
+from backend.config import settings
 
-def createaccesstoken(user_id:str,email:str)->str:
+
+def createaccesstoken(user_id: str, email: str) -> str:
     payload = {
         "sub": user_id,
         "email": email,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=EXPIRE_MINUTES)
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES),
     }
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-    return token
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
-def decodeaccesstoken(token:str):
+
+def decodeaccesstoken(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
+        )
         user_id = payload.get("sub")
         email = payload.get("email")
         if user_id is None or email is None:

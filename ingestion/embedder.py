@@ -1,15 +1,15 @@
-import os
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
+
 load_dotenv()
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBED_BATCH_SIZE = 100
+
+# Import settings after load_dotenv so the env file is read first
+from backend.config import settings  # noqa: E402
 
 
 def get_embedder() -> OpenAIEmbeddings:
-    if not os.getenv("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEY not set in .env")
     return OpenAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        chunk_size=EMBED_BATCH_SIZE,
+        model=settings.OPENAI_EMBEDDING_MODEL,
+        openai_api_key=settings.OPENAI_API_KEY,
+        chunk_size=settings.OPENAI_EMBED_BATCH_SIZE,
     )

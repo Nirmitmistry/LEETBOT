@@ -1,11 +1,32 @@
+# Environment variables — never commit real secrets
 .env
-venv
+.env.local
+.env.*.local
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Data pipeline output
 data/raw/
 data/clean/
 data/failed/
-__pycache__/
-.vscode/
+
+# Chroma local vector store
 chroma_db/
-.txt
+
+# Editor
+.vscode/
+.idea/
+
+# Misc
+*.txt
 requirements.txt
 scraper/

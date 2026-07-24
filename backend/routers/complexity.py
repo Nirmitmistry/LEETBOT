@@ -1,8 +1,8 @@
-import os
 import json
 import re
 from fastapi import APIRouter
 from backend.models.schemas import ComplexityRequest, ComplexityResponse
+from backend.config import settings
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -30,14 +30,14 @@ async def analyze_complexity(body: ComplexityRequest):
     if lang not in SUPPORTED_LANGUAGES:
         lang = "C++"
     llm = ChatOllama(
-        model=os.getenv("OLLAMA_MODEL_NAME"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        temperature=0)
+        model=settings.OLLAMA_MODEL_NAME,
+        base_url=settings.OLLAMA_BASE_URL,
+        temperature=0,
+    )
     chain = prompt | llm | StrOutputParser()
     raw = chain.invoke({"code": body.code, "language": lang})
 
-    cleaned = re.sub(r"```json\s*|```\s*", "", raw,
-                     flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"```json\s*|```\s*", "", raw, flags=re.IGNORECASE).strip()
     try:
         parsed = json.loads(cleaned)
         return ComplexityResponse(

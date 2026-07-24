@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
+from backend.config import settings
 from backend.db import connect_db, close_db
 from backend.routers import problems, hints, recommend, complexity, sessions, auth, users, chat
-from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
@@ -19,13 +20,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
-origins = [
-    "http://localhost:5173",
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

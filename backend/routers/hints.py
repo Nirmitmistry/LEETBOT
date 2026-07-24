@@ -1,13 +1,15 @@
-import os
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from bson import ObjectId
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+from backend.config import settings
 from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
 from backend.auth.dependecies import getcurrentuser
+
 router = APIRouter()
 MAX_STAGE = 6
 
@@ -55,18 +57,16 @@ def _extract_field(doc: dict, field_path: str) -> str | None:
 
 def _call_ollama(problem: dict, stage: int) -> str:
     llm = ChatOllama(
-        model=os.getenv("OLLAMA_MODEL_NAME", "qwen2.5-coder:7b"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        model=settings.OLLAMA_MODEL_NAME,
+        base_url=settings.OLLAMA_BASE_URL,
         temperature=0.3,
     )
     chain = _PROMPT | llm | StrOutputParser()
 
     constraints = problem.get("constraints", [])
     if isinstance(constraints, str):
-        constraints = [c.strip()
-                       for c in constraints.splitlines() if c.strip()]
-    constraints_text = "\n".join(
-        f"- {c}" for c in constraints) or "None provided"
+        constraints = [c.strip() for c in constraints.splitlines() if c.strip()]
+    constraints_text = "\n".join(f"- {c}" for c in constraints) or "None provided"
 
     examples = problem.get("examples", [])
     if isinstance(examples, list):
@@ -92,34 +92,33 @@ async def get_next_hint(
     slug: str,
     body: HintRequest,
     db: Database = Depends(get_db),
-    current_user: dict = Depends(getcurrentuser)
+    current_user: dict = Depends(getcurrentuser),
 ):
     try:
         oid = ObjectId(body.session_id)
     except Exception:
-        raise HTTPException(
-            status_code=400, detail="Invalid session_id format")
+        raise HTTPException(status_code=400, detail="Invalid session_id format")
 
     session = db["hint_sessions"].find_one({
         "_id": oid,
         "slug": slug,
-        "user_id": current_user["user_id"]
+        "user_id": current_user["user_id"],
     })
 
     if not session:
         raise HTTPException(
-            status_code=404, detail=f"Session '{body.session_id}' not found for '{slug}' or unauthorized access.")
+            status_code=404,
+            detail=f"Session '{body.session_id}' not found for '{slug}' or unauthorized access.",
+        )
 
     current_stage = session.get("current_stage", 0)
     if current_stage >= MAX_STAGE:
-        raise HTTPException(
-            status_code=400, detail="All hint stages already unlocked.")
+        raise HTTPException(status_code=400, detail="All hint stages already unlocked.")
 
     next_stage = current_stage + 1
     problem = db["problems"].find_one({"slug": slug})
     if not problem:
-        raise HTTPException(
-            status_code=404, detail=f"Problem '{slug}' not found")
+        raise HTTPException(status_code=404, detail=f"Problem '{slug}' not found")
 
     hint_text = _extract_field(problem, _STAGE_FIELD[next_stage])
     source = "db"
@@ -133,11 +132,9 @@ async def get_next_hint(
                 {"$set": {_STAGE_FIELD[next_stage]: hint_text}},
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=502, detail=f"LLM fallback failed: {e}")
+            raise HTTPException(status_code=502, detail=f"LLM fallback failed: {e}")
 
-    db["hint_sessions"].update_one(
-        {"_id": oid}, {"$set": {"current_stage": next_stage}})
+    db["hint_sessions"].update_one({"_id": oid}, {"$set": {"current_stage": next_stage}})
 
     return HintResponse(
         slug=slug,

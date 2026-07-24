@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
@@ -7,44 +6,30 @@ from pymongo.errors import BulkWriteError
 
 load_dotenv()
 
+from backend.config import settings  # noqa: E402
+
 # ── paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
 CLEAN_DIR = BASE_DIR / "data" / "clean"
 
-# ── mongo connection ───────────────────────────────────────────────────────────
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "leetbot_db")
-
-BATCH_SIZE = 100  # upload this many documents at once
+BATCH_SIZE = 100
 
 
 def get_db():
-    """Connect to MongoDB and return the database object."""
-    if not MONGO_URI:
-        raise ValueError(
-            "MONGO_URI not set in .env — cannot connect to MongoDB.")
-    client = MongoClient(MONGO_URI)
-    return client[MONGO_DB_NAME]
+    client = MongoClient(settings.MONGO_URI)
+    return client[settings.MONGO_DB_NAME]
 
 
 def setup_indexes(db) -> None:
-    """
-    Create the indexes we planned in Phase 2.
-    This is idempotent — calling it twice doesn't break anything.
-    """
-    problems = db["problems"]
-    problems.create_index("slug",       unique=True)
+    problems = db[settings.MONGO_PROBLEMS_COLLECTION]
+    problems.create_index("slug", unique=True)
     problems.create_index("tags")
     problems.create_index("difficulty")
-    problems.create_index([("tags", 1), ("difficulty", 1)])  # compound
+    problems.create_index([("tags", 1), ("difficulty", 1)])
     print("Indexes created/verified.")
 
 
 def upload_problems(db) -> None:
-    """
-    Load all clean JSON files and upsert them into the problems collection.
-    Uses bulk_write with upserts for efficiency — one round trip per 100 docs.
-    """
     clean_files = sorted(CLEAN_DIR.glob("*.json"), key=lambda p: int(p.stem))
     total = len(clean_files)
 
@@ -53,9 +38,11 @@ def upload_problems(db) -> None:
         return
 
     print(
-        f"Uploading {total} problems to MongoDB ({MONGO_DB_NAME}.problems)...\n")
+        f"Uploading {total} problems to MongoDB "
+        f"({settings.MONGO_DB_NAME}.{settings.MONGO_PROBLEMS_COLLECTION})...\n"
+    )
 
-    problems_col = db["problems"]
+    problems_col = db[settings.MONGO_PROBLEMS_COLLECTION]
     batch = []
     uploaded = 0
 
@@ -67,25 +54,16 @@ def upload_problems(db) -> None:
             print(f"  Could not read {clean_path.name}: {e}")
             continue
 
-        # Build an upsert operation
-        # filter: match by _id (problem_id)
-        # update: replace the whole document
         batch.append(
-            UpdateOne(
-                {"_id": doc["_id"]},
-                {"$set": doc},
-                upsert=True,
-            )
+            UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
         )
 
-        # Flush batch when full
         if len(batch) >= BATCH_SIZE:
             _flush_batch(problems_col, batch)
             uploaded += len(batch)
             print(f"  Uploaded {uploaded}/{total}...")
             batch = []
 
-    # Flush remaining
     if batch:
         _flush_batch(problems_col, batch)
         uploaded += len(batch)
@@ -94,26 +72,22 @@ def upload_problems(db) -> None:
 
 
 def _flush_batch(collection, batch: list) -> None:
-    """Execute a batch of write operations, with error reporting."""
     try:
         collection.bulk_write(batch, ordered=False)
     except BulkWriteError as e:
-        # Some docs may have failed — report but keep going
-        print(
-            f"  Bulk write error (partial): {e.details.get('writeErrors', [])[:3]}")
+        print(f"  Bulk write error (partial): {e.details.get('writeErrors', [])[:3]}")
 
 
 def run():
     print("Connecting to MongoDB Atlas...")
     db = get_db()
-    print(f"Connected to: {MONGO_DB_NAME}\n")
+    print(f"Connected to: {settings.MONGO_DB_NAME}\n")
 
     setup_indexes(db)
     upload_problems(db)
 
-    # Print a quick count to confirm
-    count = db["problems"].count_documents({})
-    print(f"\nTotal documents in problems collection: {count}")
+    count = db[settings.MONGO_PROBLEMS_COLLECTION].count_documents({})
+    print(f"\nTotal documents in {settings.MONGO_PROBLEMS_COLLECTION} collection: {count}")
 
 
 if __name__ == "__main__":
