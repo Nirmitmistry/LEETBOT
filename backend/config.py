@@ -1,13 +1,4 @@
-"""
-Central configuration module for LeetBot backend.
 
-All environment variables are read here. Import `settings` in other modules
-instead of calling os.getenv() scattered throughout the codebase.
-
-Usage:
-    from backend.config import settings
-    print(settings.MONGO_URI)
-"""
 import os
 from dotenv import load_dotenv
 
@@ -55,7 +46,7 @@ class _Settings:
 
     @property
     def GEMINI_EMBEDDING_MODEL(self) -> str:
-        return os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-00")
+        return os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
 
     @property
     def GEMINI_EMBED_BATCH_SIZE(self) -> int:
@@ -97,7 +88,7 @@ class _Settings:
     # ── Ingestion ─────────────────────────────────────────────────────────────
     @property
     def INGESTION_BATCH_SIZE(self) -> int:
-        return int(os.getenv("INGESTION_BATCH_SIZE", "50"))
+        return int(os.getenv("INGESTION_BATCH_SIZE", "10"))
 
 
 # Single shared instance imported everywhere
