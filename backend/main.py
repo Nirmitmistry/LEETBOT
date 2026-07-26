@@ -31,27 +31,23 @@ app = FastAPI(
 )
 
 # ── Global exception handler — never leak stack traces to the client ─────────
+
+
 @app.exception_handler(Exception)
 async def _global_exception_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    logger.exception("Unhandled error on %s %s",
+                     request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},
     )
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.include_router(problems.router,   prefix="/problems",   tags=["problems"])
 app.include_router(hints.router,      prefix="/hints",      tags=["hints"])
 app.include_router(recommend.router,  prefix="/recommend",  tags=["recommend"])
-app.include_router(complexity.router, prefix="/complexity", tags=["complexity"])
+app.include_router(complexity.router, prefix="/complexity",
+                   tags=["complexity"])
 app.include_router(sessions.router,   prefix="/sessions",   tags=["sessions"])
 app.include_router(auth.router,       prefix="/auth",        tags=["auth"])
 app.include_router(users.router,      prefix="/users",       tags=["users"])
@@ -102,3 +98,26 @@ def health_check():
         health["status"] = "degraded"
 
     return health
+
+
+logger.info("Allowed CORS origins: %s", settings.CORS_ORIGINS)
+
+# Wrap the entire application so even 500 responses receive CORS headers.
+app = CORSMiddleware(
+    app=app,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+    ],
+    allow_headers=[
+        "Accept",
+        "Authorization",
+        "Content-Type",
+    ],
+)
