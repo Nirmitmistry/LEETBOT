@@ -8,7 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 from backend.config import settings
 from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 
 router = APIRouter()
 MAX_STAGE = 6
@@ -92,7 +92,7 @@ def get_next_hint(
     slug: str,
     body: HintRequest,
     db: Database = Depends(get_db),
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
         oid = ObjectId(body.session_id)

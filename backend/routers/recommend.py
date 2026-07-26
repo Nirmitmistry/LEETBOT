@@ -7,7 +7,7 @@ from langchain_chroma import Chroma
 
 from backend.config import settings
 from backend.db import get_db, get_chroma
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 from backend.models.schemas import RecommendRequest, RecommendResponse, ProblemSummary
 
 router = APIRouter()
@@ -77,7 +77,7 @@ def _call_gemini(source: dict, recommended: list[dict], user: dict) -> str:
 @router.post("", response_model=RecommendResponse)
 def recommend_problems(
     body:         RecommendRequest,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
     chroma:       Chroma = Depends(get_chroma),
 ):
@@ -92,11 +92,15 @@ def recommend_problems(
     if isinstance(similar_ids, str):
         similar_ids = [s.strip() for s in similar_ids.splitlines() if s.strip()]
 
-    chroma_docs = chroma.similarity_search(
-        query=source.get("problem_statement", body.slug),
-        k=10,
-        filter={"hint_stage": 0},
-    )
+    try:
+        chroma_docs = chroma.similarity_search(
+            query=source.get("problem_statement", body.slug),
+            k=10,
+            filter={"hint_stage": 0},
+        )
+    except Exception:
+        chroma_docs = []
+
     chroma_slugs = [
         d.metadata.get("slug")
         for d in chroma_docs

@@ -4,7 +4,7 @@ from jose import jwt, JWTError
 from backend.config import settings
 
 
-def createaccesstoken(user_id: str, email: str) -> str:
+def create_access_token(user_id: str, email: str) -> str:
     payload = {
         "sub": user_id,
         "email": email,
@@ -13,7 +13,7 @@ def createaccesstoken(user_id: str, email: str) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def decodeaccesstoken(token: str):
+def decode_access_token(token: str):
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]

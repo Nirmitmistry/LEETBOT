@@ -4,17 +4,17 @@ from pymongo.database import Database
 from jose import JWTError
 from bson import ObjectId
 from backend.db import get_db
-from backend.auth.jwt import decodeaccesstoken
+from backend.auth.jwt import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-async def getcurrentuser(
+async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db:    Database = Depends(get_db),
 ) -> dict:
     try:
-        payload = decodeaccesstoken(token)
+        payload = decode_access_token(token)
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

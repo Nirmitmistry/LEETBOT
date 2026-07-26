@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from backend.db import get_db
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 from backend.models.userschema import UserResponse, UpdateProfile
 from bson import ObjectId
 
@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-def get_profile(current_user: dict = Depends(getcurrentuser)):
+def get_profile(current_user: dict = Depends(get_current_user)):
     return UserResponse(
         user_id=current_user["user_id"],
         email=current_user["email"],
@@ -23,7 +23,7 @@ def get_profile(current_user: dict = Depends(getcurrentuser)):
 @router.patch("/me", response_model=UserResponse)
 def update_profile(
     body:         UpdateProfile,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
@@ -42,7 +42,7 @@ def update_profile(
 @router.post("/me/solved/{slug}", response_model=UserResponse)
 def mark_solved(
     slug:         str,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     db["users"].update_one(
@@ -60,7 +60,7 @@ def mark_solved(
 @router.post("/me/attempted/{slug}", response_model=UserResponse)
 def mark_attempted(
     slug:         str,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     db["users"].update_one(

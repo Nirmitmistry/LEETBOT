@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 from backend.config import settings
 
 from pymongo.database import Database
@@ -28,7 +28,7 @@ class ChatRequest(BaseModel):
 @router.post("")
 def chat(
     req: ChatRequest,
-    currentuser=Depends(getcurrentuser),
+    currentuser=Depends(get_current_user),
     db: Database = Depends(get_db),
     chroma: Chroma = Depends(get_chroma),
 ):
@@ -52,7 +52,10 @@ def chat(
             (m.content for m in reversed(req.messages) if m.role == "user"), None
         )
         if last_msg:
-            docs = chroma.similarity_search(query=last_msg, k=1)
+            try:
+                docs = chroma.similarity_search(query=last_msg, k=1)
+            except Exception:
+                docs = []
             if docs:
                 detected_slug = docs[0].metadata.get("slug")
                 problem = db["problems"].find_one({"slug": detected_slug})

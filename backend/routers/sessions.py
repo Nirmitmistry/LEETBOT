@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from bson import ObjectId
 from backend.db import get_db
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 from backend.models.schemas import SessionCreateRequest, SessionResponse
 
 router = APIRouter()
@@ -22,7 +22,7 @@ def _fmt(session: dict) -> SessionResponse:
 @router.post("", response_model=SessionResponse, status_code=201)
 def create_session(
     body:         SessionCreateRequest,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     user_id = current_user["user_id"]
@@ -53,7 +53,7 @@ def create_session(
 
 @router.get("/me", response_model=list[SessionResponse])
 def get_my_sessions(
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     # Returns all sessions for the logged in user
@@ -64,7 +64,7 @@ def get_my_sessions(
 @router.get("/{session_id}", response_model=SessionResponse)
 def get_session(
     session_id:   str,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     try:
@@ -88,7 +88,7 @@ def get_session(
 @router.delete("/{session_id}", status_code=204)
 def delete_session(
     session_id:   str,
-    current_user: dict = Depends(getcurrentuser),
+    current_user: dict = Depends(get_current_user),
     db:           Database = Depends(get_db),
 ):
     try:

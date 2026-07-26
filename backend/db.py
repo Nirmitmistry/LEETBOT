@@ -1,4 +1,17 @@
-import asyncio
+"""
+Database connection helpers — MongoDB + ChromaDB.
+
+DEPLOYMENT NOTE (Render free tier):
+    Render's free-tier filesystem is *ephemeral*.  Any ChromaDB data written at
+    runtime disappears on the next deploy / restart.  For a demo deployment,
+    commit a small ``chroma_db/`` snapshot into the repo (``git add -f chroma_db``)
+    so it ships with the slug.  For production persistence, migrate to a hosted
+    vector store or a persistent-disk plan.
+"""
+
+import logging
+import os
+
 from pymongo import MongoClient
 from pymongo.database import Database
 
@@ -6,6 +19,8 @@ from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from backend.config import settings
+
+logger = logging.getLogger(__name__)
 
 _mongo_client: MongoClient | None = None
 _db: Database | None = None
@@ -16,29 +31,51 @@ async def connect_db() -> None:
     global _mongo_client, _db, _chroma
 
     # ── MongoDB ───────────────────────────────────────────────────────────────
-    _mongo_client = MongoClient(settings.MONGO_URI)
-    _db = _mongo_client[settings.MONGO_DB_NAME]
-    _mongo_client.admin.command("ping")
-    print(f" MongoDB pinged and connected! (db: {settings.MONGO_DB_NAME})")
+    try:
+        _mongo_client = MongoClient(settings.MONGO_URI, serverSelectionTimeoutMS=5000)
+        _db = _mongo_client[settings.MONGO_DB_NAME]
+        _mongo_client.admin.command("ping")
+        logger.info("MongoDB connected (db: %s)", settings.MONGO_DB_NAME)
+    except Exception as exc:
+        logger.error("MongoDB connection failed: %s", exc)
+        raise
 
     # ── Chroma ────────────────────────────────────────────────────────────────
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model=settings.GEMINI_EMBEDDING_MODEL,
-        google_api_key=settings.GEMINI_API_KEY,
-    )
-    _chroma = Chroma(
-        collection_name=settings.CHROMA_COLLECTION,
-        embedding_function=embeddings,
-        persist_directory=settings.CHROMA_PATH,
-    )
-    print(f" Chroma connected — {settings.CHROMA_PATH} (collection: {settings.CHROMA_COLLECTION})")
+    try:
+        chroma_path = settings.CHROMA_PATH
+        os.makedirs(chroma_path, exist_ok=True)
+
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model=settings.GEMINI_EMBEDDING_MODEL,
+            google_api_key=settings.GEMINI_API_KEY,
+        )
+        _chroma = Chroma(
+            collection_name=settings.CHROMA_COLLECTION,
+            embedding_function=embeddings,
+            persist_directory=chroma_path,
+        )
+
+        try:
+            count = _chroma._collection.count()
+        except Exception:
+            count = 0
+
+        logger.info(
+            "Chroma ready — path=%s  collection=%s  vectors=%d",
+            chroma_path,
+            settings.CHROMA_COLLECTION,
+            count,
+        )
+    except Exception as exc:
+        logger.warning("Chroma initialisation failed (non-fatal): %s", exc)
+        _chroma = None
 
 
 async def close_db() -> None:
     global _mongo_client
     if _mongo_client:
         _mongo_client.close()
-        print("MongoDB connection closed")
+        logger.info("MongoDB connection closed")
 
 
 def get_db() -> Database:
@@ -52,10 +89,7 @@ def get_db() -> Database:
 def get_chroma() -> Chroma:
     if _chroma is None:
         raise RuntimeError(
-            "Chroma not initialised — connect_db() was never called"
+            "Chroma vector store is not available. "
+            "The chroma_db directory may be empty or initialisation failed."
         )
     return _chroma
-
-
-if __name__ == "__main__":
-    asyncio.run(connect_db())

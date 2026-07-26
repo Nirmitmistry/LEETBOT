@@ -1,10 +1,19 @@
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import settings
 from backend.db import connect_db, close_db
 from backend.routers import problems, hints, recommend, complexity, sessions, auth, users, chat
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -20,6 +29,16 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# ── Global exception handler — never leak stack traces to the client ─────────
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,25 +65,40 @@ def root():
 
 @app.get("/health", tags=["health"])
 def health_check():
-    """Detailed health check for deployment monitoring."""
+    """Lightweight health check for deployment monitoring.
+
+    Never exposes secrets or raw exception details.
+    """
     from backend.db import get_db, get_chroma
 
-    health = {"status": "ok", "gemini": "configured", "mongo": "unknown", "chroma": "unknown"}
+    health = {
+        "status": "ok",
+        "mongodb": "unknown",
+        "vector_store": "unknown",
+    }
 
+    # ── MongoDB ──────────────────────────────────────────────────────────
     try:
         db = get_db()
         db.client.admin.command("ping")
-        health["mongo"] = "connected"
-    except Exception as e:
-        health["mongo"] = f"error: {e}"
+        health["mongodb"] = "connected"
+    except Exception as exc:
+        logger.warning("Health-check MongoDB error: %s", exc)
+        health["mongodb"] = "unavailable"
         health["status"] = "degraded"
 
+    # ── Chroma ───────────────────────────────────────────────────────────
     try:
         chroma = get_chroma()
         count = chroma._collection.count()
-        health["chroma"] = f"connected ({count} vectors)"
-    except Exception as e:
-        health["chroma"] = f"error: {e}"
+        health["vector_store"] = f"available ({count} vectors)"
+    except RuntimeError:
+        # Chroma was never initialised (empty dir, etc.)
+        health["vector_store"] = "unavailable"
+        health["status"] = "degraded"
+    except Exception as exc:
+        logger.warning("Health-check Chroma error: %s", exc)
+        health["vector_store"] = "unavailable"
         health["status"] = "degraded"
 
     return health

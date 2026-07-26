@@ -1,9 +1,9 @@
 import json
 import re
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from backend.models.schemas import ComplexityRequest, ComplexityResponse
 from backend.config import settings
-from backend.auth.dependencies import getcurrentuser
+from backend.auth.dependencies import get_current_user
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -26,7 +26,7 @@ prompt = ChatPromptTemplate.from_messages([
 
 
 @router.post("", response_model=ComplexityResponse)
-def analyze_complexity(body: ComplexityRequest, current_user: dict = Depends(getcurrentuser)):
+def analyze_complexity(body: ComplexityRequest, current_user: dict = Depends(get_current_user)):
     lang = body.language.lower()
     if lang not in SUPPORTED_LANGUAGES:
         lang = "C++"
@@ -36,7 +36,11 @@ def analyze_complexity(body: ComplexityRequest, current_user: dict = Depends(get
         temperature=0,
     )
     chain = prompt | llm | StrOutputParser()
-    raw = chain.invoke({"code": body.code, "language": lang})
+
+    try:
+        raw = chain.invoke({"code": body.code, "language": lang})
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Gemini API error: {type(e).__name__}")
 
     cleaned = re.sub(r"```json\s*|```\s*", "", raw, flags=re.IGNORECASE).strip()
     try:

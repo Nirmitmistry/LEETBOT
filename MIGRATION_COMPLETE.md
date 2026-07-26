@@ -97,7 +97,7 @@ CHROMA_PATH=./chroma_db
 CHROMA_COLLECTION=leetcode_chunks
 
 # JWT Authentication
-JWT_SECRET=12345
+JWT_SECRET=<generate-with-openssl-rand-hex-32>
 JWT_EXPIRE_MINUTES=1440
 JWT_ALGORITHM=HS256
 

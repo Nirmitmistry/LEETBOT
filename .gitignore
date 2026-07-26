@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Python
 venv/
@@ -35,3 +36,5 @@ frontend/dist/
 # Misc
 *.log
 .DS_Store
+
+*.md
