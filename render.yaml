@@ -2,12 +2,13 @@ services:
   - type: web
     name: leetbot-api
     runtime: python
+    rootDir: backend
     plan: free
 
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
 
     startCommand: >
-      uvicorn backend.main:app
+      uvicorn main:app
       --host 0.0.0.0
       --port $PORT
 
@@ -27,7 +28,7 @@ services:
         sync: false
 
       - key: GEMINI_MODEL_NAME
-        value: gemini-3.6-flash
+        value: gemini-1.5-flash
 
       - key: GEMINI_EMBEDDING_MODEL
         value: models/gemini-embedding-001
