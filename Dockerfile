@@ -1,34 +1,23 @@
-# ── Stage 1: Build frontend ──────────────────────────────────────────────────
-FROM node:18-alpine AS frontend-build
-
-WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --production=false
-COPY frontend/ ./
-RUN npm run build
-
-# ── Stage 2: Python backend ─────────────────────────────────────────────────
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PORT=8000
 
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./
 
-# Copy backend source
-COPY backend/ ./backend/
-COPY ingestion/ ./ingestion/
+RUN python -m pip install --upgrade pip \
+    && pip install -r requirements.txt
 
-# Copy built frontend
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
+COPY backend ./backend
+COPY ingestion ./ingestion
 
-# Expose port
+# Remove this line when using a hosted vector database.
+COPY chroma_db ./chroma_db
+
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
-
-# Run with uvicorn
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

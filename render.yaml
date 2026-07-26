@@ -3,15 +3,55 @@ services:
     name: leetbot-api
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+
+    startCommand: >
+      uvicorn backend.main:app
+      --host 0.0.0.0
+      --port $PORT
+
     healthCheckPath: /health
+
     envVars:
       - key: MONGO_URI
         sync: false
+
+      - key: MONGO_DB_NAME
+        value: leetbot_db
+
+      - key: MONGO_PROBLEMS_COLLECTION
+        value: problems
+
       - key: GEMINI_API_KEY
         sync: false
+
+      - key: GEMINI_MODEL_NAME
+        value: gemini-3.6-flash
+
+      - key: GEMINI_EMBEDDING_MODEL
+        value: models/gemini-embedding-001
+
+      - key: GEMINI_EMBED_BATCH_SIZE
+        value: "100"
+
       - key: JWT_SECRET
         sync: false
+
+      - key: JWT_ALGORITHM
+        value: HS256
+
+      - key: JWT_EXPIRE_MINUTES
+        value: "1440"
+
       - key: CORS_ORIGINS
         sync: false
+
+      - key: CHROMA_PATH
+        value: ./chroma_db
+
+      - key: CHROMA_COLLECTION
+        value: leetcode_chunks
+
+      - key: INGESTION_BATCH_SIZE
+        value: "50"

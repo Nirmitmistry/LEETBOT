@@ -57,6 +57,15 @@ class _Settings:
     def GEMINI_MODEL_NAME(self) -> str:
         return os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
 
+    # ── OpenAI (Ingestion Embeddings) ─────────────────────────────────────────
+    @property
+    def OPENAI_API_KEY(self) -> str:
+        return _require("OPENAI_API_KEY")
+
+    @property
+    def OPENAI_EMBEDDING_MODEL(self) -> str:
+        return os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+
     # ── JWT ───────────────────────────────────────────────────────────────────
     @property
     def JWT_SECRET(self) -> str:
@@ -88,7 +97,7 @@ class _Settings:
     # ── Ingestion ─────────────────────────────────────────────────────────────
     @property
     def INGESTION_BATCH_SIZE(self) -> int:
-        return int(os.getenv("INGESTION_BATCH_SIZE", "10"))
+        return int(os.getenv("INGESTION_BATCH_SIZE", "50"))
 
 
 # Single shared instance imported everywhere

@@ -1,0 +1,30 @@
+.git
+.github
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+venv
+.venv
+
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+frontend/node_modules
+frontend/dist
+
+data/raw
+data/clean
+data/failed
+
+*.log
+.DS_Store
+.vscode
+.idea
+
+# Do not ignore chroma_db while baking the demo snapshot into the image.
+# Add it here after migrating to Qdrant or another hosted vector database.
