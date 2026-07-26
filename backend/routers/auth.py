@@ -21,7 +21,7 @@ def _fmt_user(user: dict) -> UserResponse:
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-async def register(body: UserRegister, db: Database = Depends(get_db)):
+def register(body: UserRegister, db: Database = Depends(get_db)):
     if db["users"].find_one({"email": body.email}):
         raise HTTPException(status_code=409, detail="Email already registered")
 
@@ -45,7 +45,7 @@ async def register(body: UserRegister, db: Database = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: UserLogin, db: Database = Depends(get_db)):
+def login(body: UserLogin, db: Database = Depends(get_db)):
     user = db["users"].find_one({"email": body.email})
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(

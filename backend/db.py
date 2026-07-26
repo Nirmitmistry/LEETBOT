@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from backend.config import settings
 
@@ -22,9 +22,9 @@ async def connect_db() -> None:
     print(f" MongoDB pinged and connected! (db: {settings.MONGO_DB_NAME})")
 
     # ── Chroma ────────────────────────────────────────────────────────────────
-    embeddings = OpenAIEmbeddings(
-        model=settings.OPENAI_EMBEDDING_MODEL,
-        openai_api_key=settings.OPENAI_API_KEY,
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=settings.GEMINI_EMBEDDING_MODEL,
+        google_api_key=settings.GEMINI_API_KEY,
     )
     _chroma = Chroma(
         collection_name=settings.CHROMA_COLLECTION,

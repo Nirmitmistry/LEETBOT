@@ -40,5 +40,31 @@ app.include_router(chat.router,       tags=["chat"])
 
 
 @app.get("/", tags=["health"])
-async def root():
+def root():
     return {"status": "ok", "message": "LeetBot API is running"}
+
+
+@app.get("/health", tags=["health"])
+def health_check():
+    """Detailed health check for deployment monitoring."""
+    from backend.db import get_db, get_chroma
+
+    health = {"status": "ok", "gemini": "configured", "mongo": "unknown", "chroma": "unknown"}
+
+    try:
+        db = get_db()
+        db.client.admin.command("ping")
+        health["mongo"] = "connected"
+    except Exception as e:
+        health["mongo"] = f"error: {e}"
+        health["status"] = "degraded"
+
+    try:
+        chroma = get_chroma()
+        count = chroma._collection.count()
+        health["chroma"] = f"connected ({count} vectors)"
+    except Exception as e:
+        health["chroma"] = f"error: {e}"
+        health["status"] = "degraded"
+
+    return health

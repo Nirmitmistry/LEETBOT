@@ -140,7 +140,7 @@ export default function Chat() {
   const handleAnalyzeComplexity = async () => {
     const code = input.trim();
     if (!code || loading) {
-      alert("Please paste your code in the input box first to analyze its complexity.");
+      toast.error("Please paste your code in the input box first to analyze its complexity.");
       return;
     }
     setLoading(true);
@@ -154,7 +154,7 @@ export default function Chat() {
       const res = await analyzeComplexity(API, code);
       const analysisReply = `📊 **Complexity Analysis**:\n\n**Time Complexity**: ${res.data.time_complexity}\n**Space Complexity**: ${res.data.space_complexity}\n\n**Explanation**: ${res.data.explanation}`;
       setMessages([...newMessages, { role: 'assistant', content: analysisReply }]);
-    } catch (err) {
+    } catch {
       setMessages([...newMessages, { role: 'assistant', content: 'Failed to analyze complexity. Please try again.' }]);
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ export default function Chat() {
       setUser(res.data);
       localStorage.setItem('leetbot_user', JSON.stringify(res.data));
       toast.success(`Marked "${problemContext.title}" as solved!`);
-    } catch (err) {
+    } catch {
       toast.error('Failed to mark as solved');
     }
   };
@@ -187,7 +187,7 @@ export default function Chat() {
       setUser(res.data);
       localStorage.setItem('leetbot_user', JSON.stringify(res.data));
       toast.success(`Marked "${problemContext.title}" as attempted!`);
-    } catch (err) {
+    } catch {
       toast.error('Failed to mark as attempted');
     }
   };
@@ -199,7 +199,7 @@ export default function Chat() {
         <h1 className="chat-title">
           {problemContext.title ? `Chat — ${problemContext.title}` : 'Coding Assistant'}
         </h1>
-        <p className="chat-subtitle">Powered by qwen2.5-coder:7b</p>
+        <p className="chat-subtitle">Powered by Gemini AI</p>
 
         {/* Action Buttons for Contextual Tools */}
         <div className="chat-header-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>

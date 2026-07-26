@@ -166,6 +166,14 @@
   background-color: rgba(239, 68, 68, 0.1);
 }
 
+.sidebar-overlay {
+  display: none;
+}
+
+.mobile-menu-btn {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -176,5 +184,43 @@
   
   .sidebar.mobile-open {
     transform: translateX(0);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 40;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(20, 20, 30, 0.9);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .mobile-menu-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 49;
+    backdrop-filter: blur(4px);
   }
 }

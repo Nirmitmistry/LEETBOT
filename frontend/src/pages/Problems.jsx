@@ -13,6 +13,7 @@ export default function Problems() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   // Fetch all problems on mount
   useEffect(() => {
@@ -53,13 +54,19 @@ export default function Problems() {
 
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
+      const currentRequestId = ++requestIdRef.current;
       try {
         const res = await searchProblems(API, query.trim());
-        setProblems(res.data.results || []);
+        // Only update if this is still the latest request
+        if (currentRequestId === requestIdRef.current) {
+          setProblems(res.data.results || []);
+        }
       } catch (err) {
         console.error('Search failed:', err);
       } finally {
-        setSearching(false);
+        if (currentRequestId === requestIdRef.current) {
+          setSearching(false);
+        }
       }
     }, 400);
   }, [API, loading]);

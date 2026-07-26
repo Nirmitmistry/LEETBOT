@@ -1,9 +1,10 @@
 import json
 import re
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from backend.models.schemas import ComplexityRequest, ComplexityResponse
 from backend.config import settings
-from langchain_ollama import ChatOllama
+from backend.auth.dependencies import getcurrentuser
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -25,13 +26,13 @@ prompt = ChatPromptTemplate.from_messages([
 
 
 @router.post("", response_model=ComplexityResponse)
-async def analyze_complexity(body: ComplexityRequest):
+def analyze_complexity(body: ComplexityRequest, current_user: dict = Depends(getcurrentuser)):
     lang = body.language.lower()
     if lang not in SUPPORTED_LANGUAGES:
         lang = "C++"
-    llm = ChatOllama(
-        model=settings.OLLAMA_MODEL_NAME,
-        base_url=settings.OLLAMA_BASE_URL,
+    llm = ChatGoogleGenerativeAI(
+        model=settings.GEMINI_MODEL_NAME,
+        google_api_key=settings.GEMINI_API_KEY,
         temperature=0,
     )
     chain = prompt | llm | StrOutputParser()

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
-import httpx
 
-from backend.auth.dependecies import getcurrentuser
+from backend.auth.dependencies import getcurrentuser
 from backend.config import settings
 
 from pymongo.database import Database
 from langchain_chroma import Chroma
+from langchain_google_genai import ChatGoogleGenerativeAI
 from backend.db import get_db, get_chroma
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -26,7 +26,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("")
-async def chat(
+def chat(
     req: ChatRequest,
     currentuser=Depends(getcurrentuser),
     db: Database = Depends(get_db),
@@ -65,27 +65,29 @@ async def chat(
                             f"you can provide them with Hint 1: {hint_1} if they need a hint."
                         )
 
-    ollama_messages = [{"role": "system", "content": system_prompt}]
+    # Gemini LLM for chat inference
+    llm = ChatGoogleGenerativeAI(
+        model=settings.GEMINI_MODEL_NAME,
+        google_api_key=settings.GEMINI_API_KEY,
+        temperature=0.7,
+    )
+    
+    # Convert messages to LangChain format
+    from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+    
+    messages = [SystemMessage(content=system_prompt)]
     for msg in req.messages:
-        ollama_messages.append({"role": msg.role, "content": msg.content})
-
-    async with httpx.AsyncClient(timeout=120) as client:
-        response = await client.post(
-            f"{settings.OLLAMA_BASE_URL}/api/chat",
-            json={
-                "model": settings.OLLAMA_MODEL_NAME,
-                "messages": ollama_messages,
-                "stream": False,
-            },
+        if msg.role == "user":
+            messages.append(HumanMessage(content=msg.content))
+        elif msg.role == "assistant":
+            messages.append(AIMessage(content=msg.content))
+    
+    try:
+        response = llm.invoke(messages)
+        reply = response.content
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Gemini API error: {str(e)}"
         )
-        data = response.json()
-        if "message" not in data:
-            error_msg = data.get(
-                "error", f"Unexpected Ollama response: {str(data)[:200]}"
-            )
-            raise HTTPException(
-                status_code=502, detail=f"Ollama error: {error_msg}"
-            )
-        reply = data["message"]["content"]
 
     return {"reply": reply}

@@ -28,7 +28,7 @@ def _to_summary(doc: dict) -> ProblemSummary:
     )
 
 @router.get("", response_model=SearchResponse)
-async def get_all_problems(
+def get_all_problems(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Database = Depends(get_db)
@@ -39,7 +39,7 @@ async def get_all_problems(
 
 
 @router.get("/search", response_model=SearchResponse)
-async def search_problems(
+def search_problems(
     q:          str = Query(..., min_length=3,
                             description="Natural language query"),
     top_k:      int = Query(5, ge=1, le=20),
@@ -61,7 +61,7 @@ async def search_problems(
 
 
 @router.get("/{slug}", response_model=ProblemDetail)
-async def get_problem(slug: str, db: Database = Depends(get_db)):
+def get_problem(slug: str, db: Database = Depends(get_db)):
     doc = db["problems"].find_one({"slug": slug}, {"_id": 0})
     if not doc:
         raise HTTPException(

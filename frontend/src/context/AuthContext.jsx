@@ -9,13 +9,50 @@ const API = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('leetbot_token');
+      localStorage.removeItem('leetbot_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('leetbot_token'));
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('leetbot_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        const { data } = await API.get('/users/me');
+        setUser(data);
+        localStorage.setItem('leetbot_user', JSON.stringify(data));
+      } catch {
+        // Token is invalid/expired — clear everything
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('leetbot_token');
+        localStorage.removeItem('leetbot_user');
+      } finally {
+        setLoading(false);
+      }
+    };
+    validateToken();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep axios header in sync with token
   useEffect(() => {
@@ -91,6 +128,7 @@ export function AppProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AppProvider');

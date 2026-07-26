@@ -22,9 +22,16 @@ data/failed/
 # Chroma local vector store
 chroma_db/
 
+# Node.js
+node_modules/
+
+# Frontend build output
+frontend/dist/
+
 # Editor
 .vscode/
 .idea/
 
 # Misc
-scraper/
+*.log
+.DS_Store

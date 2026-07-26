@@ -21,7 +21,7 @@ LeetBot is a full-stack, Retrieval-Augmented Generation (RAG) based LeetCode ass
 **Backend**
 * **Framework:** FastAPI (Python)
 * **Database:** MongoDB Atlas (Document storage) & Chroma (Vector database)
-* **AI / Embeddings:** OpenAI Embeddings (RAG pipeline)
+* **AI:** Google Gemini API (embeddings + LLM inference)
 * **Authentication:** JWT-based auth
 
 ## Project Structure
@@ -50,6 +50,6 @@ LEETBOT/
 │
 └── ingestion/          # RAG Embeddings pipeline (Phase 4)
     ├── chunker.py      # Splits problem statements into semantic chunks
-    ├── embedder.py     # Generates OpenAI embeddings for chunks
+    ├── embedder.py     # Generates Gemini embeddings for chunks
     ├── indexer.py      # Upserts embeddings into Chroma vector store
     └── run.py          # Orchestrates batch ingestion (50 problems/batch)

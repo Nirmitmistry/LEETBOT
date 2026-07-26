@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
 from bson import ObjectId
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from backend.config import settings
 from backend.db import get_db
 from backend.models.schemas import HintRequest, HintResponse
-from backend.auth.dependecies import getcurrentuser
+from backend.auth.dependencies import getcurrentuser
 
 router = APIRouter()
 MAX_STAGE = 6
@@ -55,10 +55,10 @@ def _extract_field(doc: dict, field_path: str) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
-def _call_ollama(problem: dict, stage: int) -> str:
-    llm = ChatOllama(
-        model=settings.OLLAMA_MODEL_NAME,
-        base_url=settings.OLLAMA_BASE_URL,
+def _call_gemini(problem: dict, stage: int) -> str:
+    llm = ChatGoogleGenerativeAI(
+        model=settings.GEMINI_MODEL_NAME,
+        google_api_key=settings.GEMINI_API_KEY,
         temperature=0.3,
     )
     chain = _PROMPT | llm | StrOutputParser()
@@ -88,7 +88,7 @@ def _call_ollama(problem: dict, stage: int) -> str:
 
 
 @router.post("/{slug}", response_model=HintResponse)
-async def get_next_hint(
+def get_next_hint(
     slug: str,
     body: HintRequest,
     db: Database = Depends(get_db),
@@ -125,7 +125,7 @@ async def get_next_hint(
 
     if not hint_text:
         try:
-            hint_text = _call_ollama(problem, next_stage)
+            hint_text = _call_gemini(problem, next_stage)
             source = "llm"
             db["problems"].update_one(
                 {"slug": slug},

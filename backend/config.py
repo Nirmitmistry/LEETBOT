@@ -39,7 +39,7 @@ class _Settings:
     def MONGO_PROBLEMS_COLLECTION(self) -> str:
         return os.getenv("MONGO_PROBLEMS_COLLECTION", "problems")
 
-    # ── Chroma / Vector store ─────────────────────────────────────────────────
+    # ── Chroma / Vector store ────────────────────────────────────────────────
     @property
     def CHROMA_PATH(self) -> str:
         return os.getenv("CHROMA_PATH", "./chroma_db")
@@ -48,27 +48,23 @@ class _Settings:
     def CHROMA_COLLECTION(self) -> str:
         return os.getenv("CHROMA_COLLECTION", "leetcode_chunks")
 
-    # ── OpenAI ────────────────────────────────────────────────────────────────
+    # ── Gemini ────────────────────────────────────────────────────────────────
     @property
-    def OPENAI_API_KEY(self) -> str:
-        return _require("OPENAI_API_KEY")
+    def GEMINI_API_KEY(self) -> str:
+        return _require("GEMINI_API_KEY")
 
     @property
-    def OPENAI_EMBEDDING_MODEL(self) -> str:
-        return os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    def GEMINI_EMBEDDING_MODEL(self) -> str:
+        return os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
 
     @property
-    def OPENAI_EMBED_BATCH_SIZE(self) -> int:
-        return int(os.getenv("OPENAI_EMBED_BATCH_SIZE", "100"))
+    def GEMINI_EMBED_BATCH_SIZE(self) -> int:
+        return int(os.getenv("GEMINI_EMBED_BATCH_SIZE", "100"))
 
-    # ── Ollama ────────────────────────────────────────────────────────────────
+    # ── Gemini LLM ────────────────────────────────────────────────────────────
     @property
-    def OLLAMA_BASE_URL(self) -> str:
-        return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-
-    @property
-    def OLLAMA_MODEL_NAME(self) -> str:
-        return os.getenv("OLLAMA_MODEL_NAME", "qwen2.5-coder:7b")
+    def GEMINI_MODEL_NAME(self) -> str:
+        return os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 
     # ── JWT ───────────────────────────────────────────────────────────────────
     @property

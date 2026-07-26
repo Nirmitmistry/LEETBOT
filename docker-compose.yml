@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  leetbot:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persist Chroma vector DB across restarts
+      - chroma_data:/app/chroma_db
+    restart: unless-stopped
+
+volumes:
+  chroma_data:

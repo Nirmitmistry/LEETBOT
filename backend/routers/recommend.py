@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.database import Database
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_chroma import Chroma
 
 from backend.config import settings
 from backend.db import get_db, get_chroma
-from backend.auth.dependecies import getcurrentuser
+from backend.auth.dependencies import getcurrentuser
 from backend.models.schemas import RecommendRequest, RecommendResponse, ProblemSummary
 
 router = APIRouter()
@@ -42,13 +42,13 @@ def _to_summary(doc: dict) -> ProblemSummary:
     )
 
 
-def _call_ollama(source: dict, recommended: list[dict], user: dict) -> str:
+def _call_gemini(source: dict, recommended: list[dict], user: dict) -> str:
     if not recommended:
         return "No similar problems found."
 
-    llm = ChatOllama(
-        model=settings.OLLAMA_MODEL_NAME,
-        base_url=settings.OLLAMA_BASE_URL,
+    llm = ChatGoogleGenerativeAI(
+        model=settings.GEMINI_MODEL_NAME,
+        google_api_key=settings.GEMINI_API_KEY,
         temperature=0.4,
     )
     chain = _PROMPT | llm | StrOutputParser()
@@ -75,7 +75,7 @@ def _call_ollama(source: dict, recommended: list[dict], user: dict) -> str:
 
 
 @router.post("", response_model=RecommendResponse)
-async def recommend_problems(
+def recommend_problems(
     body:         RecommendRequest,
     current_user: dict = Depends(getcurrentuser),
     db:           Database = Depends(get_db),
@@ -118,7 +118,7 @@ async def recommend_problems(
     cursor = db["problems"].find(query, {"_id": 0}).limit(body.top_k)
     results = [_to_summary(p) for p in cursor]
 
-    reason = _call_ollama(
+    reason = _call_gemini(
         source=source,
         recommended=[r.model_dump() for r in results],
         user=current_user,

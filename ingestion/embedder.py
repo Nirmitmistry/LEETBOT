@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 load_dotenv()
 
@@ -7,9 +7,8 @@ load_dotenv()
 from backend.config import settings  # noqa: E402
 
 
-def get_embedder() -> OpenAIEmbeddings:
-    return OpenAIEmbeddings(
-        model=settings.OPENAI_EMBEDDING_MODEL,
-        openai_api_key=settings.OPENAI_API_KEY,
-        chunk_size=settings.OPENAI_EMBED_BATCH_SIZE,
+def get_embedder() -> GoogleGenerativeAIEmbeddings:
+    return GoogleGenerativeAIEmbeddings(
+        model=settings.GEMINI_EMBEDDING_MODEL,
+        google_api_key=settings.GEMINI_API_KEY,
     )
