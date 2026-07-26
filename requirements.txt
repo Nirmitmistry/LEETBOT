@@ -22,3 +22,5 @@ python-jose[cryptography]==3.5.0
 pydantic[email]==2.12.3
 
 python-dotenv==1.2.2
+passlib[bcrypt]==1.7.4
+bcrypt==4.3.0
