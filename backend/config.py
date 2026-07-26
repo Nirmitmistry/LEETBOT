@@ -55,7 +55,7 @@ class _Settings:
 
     @property
     def GEMINI_EMBEDDING_MODEL(self) -> str:
-        return os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
+        return os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-00")
 
     @property
     def GEMINI_EMBED_BATCH_SIZE(self) -> int:
@@ -64,7 +64,7 @@ class _Settings:
     # ── Gemini LLM ────────────────────────────────────────────────────────────
     @property
     def GEMINI_MODEL_NAME(self) -> str:
-        return os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+        return os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
 
     # ── JWT ───────────────────────────────────────────────────────────────────
     @property
