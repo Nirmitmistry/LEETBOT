@@ -14,13 +14,16 @@ export default function Problems() {
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
   const requestIdRef = useRef(0);
+  const allProblemsRef = useRef([]);
 
   // Fetch all problems on mount
   useEffect(() => {
     const fetchProblems = async () => {
       try {
         const res = await getAllProblems(API);
-        setProblems(res.data.results || []);
+        const data = res.data.results || [];
+        allProblemsRef.current = data;
+        setProblems(data);
       } catch (err) {
         setError('Failed to load problems. Please try again.');
         console.error(err);
@@ -31,24 +34,33 @@ export default function Problems() {
     fetchProblems();
   }, [API]);
 
-  // Debounced semantic search
+  // Client-side text filter fallback
+  const filterLocally = useCallback((query) => {
+    const q = query.toLowerCase();
+    return allProblemsRef.current.filter((p) => {
+      const titleMatch = p.title?.toLowerCase().includes(q);
+      const slugMatch = p.slug?.toLowerCase().includes(q);
+      const tagMatch = (p.tags || []).some((t) => t.toLowerCase().includes(q));
+      const diffMatch = p.difficulty?.toLowerCase().includes(q);
+      return titleMatch || slugMatch || tagMatch || diffMatch;
+    });
+  }, []);
+
+  // Debounced search — tries semantic search first, falls back to local filter
   const handleSearch = useCallback((query) => {
     setSearchQuery(query);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!query.trim() || query.trim().length < 3) {
-      // Reset to full list
+      // Restore full list instantly from cache
       setSearching(false);
-      const refetch = async () => {
-        try {
-          const res = await getAllProblems(API);
-          setProblems(res.data.results || []);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      if (!loading) refetch();
+      if (query.trim().length > 0) {
+        // 1-2 character partial query: quick local filter
+        setProblems(filterLocally(query.trim()));
+      } else {
+        setProblems(allProblemsRef.current);
+      }
       return;
     }
 
@@ -57,19 +69,28 @@ export default function Problems() {
       const currentRequestId = ++requestIdRef.current;
       try {
         const res = await searchProblems(API, query.trim());
-        // Only update if this is still the latest request
         if (currentRequestId === requestIdRef.current) {
-          setProblems(res.data.results || []);
+          const results = res.data.results || [];
+          if (results.length > 0) {
+            setProblems(results);
+          } else {
+            // Semantic search returned nothing — try local filter
+            setProblems(filterLocally(query.trim()));
+          }
         }
       } catch (err) {
         console.error('Search failed:', err);
+        // Backend search failed — fall back to client-side filter
+        if (currentRequestId === requestIdRef.current) {
+          setProblems(filterLocally(query.trim()));
+        }
       } finally {
         if (currentRequestId === requestIdRef.current) {
           setSearching(false);
         }
       }
     }, 400);
-  }, [API, loading]);
+  }, [API, filterLocally]);
 
   const handleRowClick = (problem) => {
     navigate('/chat', { state: { problemContext: problem } });
