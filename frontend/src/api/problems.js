@@ -4,5 +4,5 @@ export const searchProblems = (API, query) =>
 export const getProblem = (API, slug) =>
   API.get(`/problems/${slug}`)
 
-export const getAllProblems = (API) =>
-  API.get(`/problems`)
+export const getAllProblems = (API, skip = 0, limit = 50) =>
+  API.get(`/problems`, { params: { skip, limit } })

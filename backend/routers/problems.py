@@ -30,7 +30,7 @@ def _to_summary(doc: dict) -> ProblemSummary:
 @router.get("", response_model=SearchResponse)
 def get_all_problems(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=2000),
     db: Database = Depends(get_db)
 ):
     cursor = db["problems"].find({}, {"_id": 0}).skip(skip).limit(limit)

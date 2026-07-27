@@ -16,22 +16,35 @@ export default function Problems() {
   const requestIdRef = useRef(0);
   const allProblemsRef = useRef([]);
 
-  // Fetch all problems on mount
+  // Fetch ALL problems on mount (paginated)
   useEffect(() => {
-    const fetchProblems = async () => {
+    const fetchAllProblems = async () => {
+      const PAGE_SIZE = 200;
+      let skip = 0;
+      let all = [];
       try {
-        const res = await getAllProblems(API);
-        const data = res.data.results || [];
-        allProblemsRef.current = data;
-        setProblems(data);
+        while (true) {
+          const res = await getAllProblems(API, skip, PAGE_SIZE);
+          const batch = res.data.results || [];
+          all = all.concat(batch);
+          if (batch.length < PAGE_SIZE) break;  // last page
+          skip += PAGE_SIZE;
+        }
+        allProblemsRef.current = all;
+        setProblems(all);
       } catch (err) {
         setError('Failed to load problems. Please try again.');
         console.error(err);
+        // If we got partial data, still show it
+        if (all.length > 0) {
+          allProblemsRef.current = all;
+          setProblems(all);
+        }
       } finally {
         setLoading(false);
       }
     };
-    fetchProblems();
+    fetchAllProblems();
   }, [API]);
 
   // Client-side text filter fallback
