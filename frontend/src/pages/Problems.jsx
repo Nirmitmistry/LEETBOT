@@ -106,6 +106,7 @@ export default function Problems() {
   }, [API, filterLocally]);
 
   const handleRowClick = (problem) => {
+    sessionStorage.setItem('leetbot_active_problem', JSON.stringify(problem));
     navigate('/chat', { state: { problemContext: problem } });
   };
 
@@ -157,14 +158,18 @@ export default function Problems() {
                 className="search-clear-btn"
                 onClick={() => handleSearch('')}
                 title="Clear search"
+                aria-label="Clear search"
               >
-                ✕
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             )}
           </div>
           {searchQuery.trim().length >= 3 && (
             <p className="search-hint">
-              🔍 Showing semantic matches for "<strong>{searchQuery.trim()}</strong>"
+              Showing semantic matches for "<strong>{searchQuery.trim()}</strong>"
             </p>
           )}
         </div>

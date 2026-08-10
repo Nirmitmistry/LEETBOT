@@ -261,6 +261,12 @@
   font-size: 12px;
 }
 
+.terminal-output::before {
+  content: '> ';
+  color: #4ade80;
+  font-weight: 600;
+}
+
 /* Features (Register page) */
 .auth-brand__features {
   display: flex;

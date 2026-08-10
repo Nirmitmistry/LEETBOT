@@ -105,7 +105,7 @@ export default function Login() {
                   <span className="terminal-text typing-animation">leetbot solve --hint "Two Sum"</span>
                 </div>
                 <div className="terminal-line terminal-line--output">
-                  <span className="terminal-output">✓ Use a hash map for O(n) time complexity</span>
+                  <span className="terminal-output">Use a hash map for O(n) time complexity</span>
                 </div>
               </div>
             </div>

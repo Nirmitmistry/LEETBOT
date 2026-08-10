@@ -221,3 +221,79 @@
   .chat-input-container { padding: 16px; }
   .message-row { padding: 0 16px; }
 }
+
+/* Action Buttons */
+.chat-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.action-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.action-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.action-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.action-btn--hint {
+  background: rgba(255, 161, 22, 0.12);
+  color: #ffa116;
+  border: 1px solid rgba(255, 161, 22, 0.3);
+}
+
+.action-btn--hint:not(:disabled):hover {
+  background: rgba(255, 161, 22, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 161, 22, 0.15);
+}
+
+.action-btn--complexity {
+  background: rgba(0, 184, 163, 0.12);
+  color: #00b8a3;
+  border: 1px solid rgba(0, 184, 163, 0.3);
+}
+
+.action-btn--complexity:not(:disabled):hover {
+  background: rgba(0, 184, 163, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 184, 163, 0.15);
+}
+
+.action-btn--solved {
+  background: rgba(0, 184, 163, 0.12);
+  color: #00b8a3;
+  border: 1px solid rgba(0, 184, 163, 0.3);
+}
+
+.action-btn--solved:not(:disabled):hover {
+  background: rgba(0, 184, 163, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 184, 163, 0.15);
+}
+
+.action-btn--attempted {
+  background: rgba(255, 192, 30, 0.12);
+  color: #ffc01e;
+  border: 1px solid rgba(255, 192, 30, 0.3);
+}
+
+.action-btn--attempted:not(:disabled):hover {
+  background: rgba(255, 192, 30, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 192, 30, 0.15);
+}

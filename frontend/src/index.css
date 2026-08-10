@@ -44,3 +44,21 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Selection styling */
+::selection {
+  background: rgba(255, 161, 22, 0.3);
+  color: #fff;
+}
+
+/* Global entrance animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

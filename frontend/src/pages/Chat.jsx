@@ -35,7 +35,18 @@ function Message({ msg, userAvatar }) {
 export default function Chat() {
   const { API, user, setUser } = useAuth();
   const location = useLocation();
-  const problemContext = location.state?.problemContext || {};
+  const problemContext = (() => {
+    if (location.state?.problemContext) {
+      sessionStorage.setItem('leetbot_active_problem', JSON.stringify(location.state.problemContext));
+      return location.state.problemContext;
+    }
+    try {
+      const saved = sessionStorage.getItem('leetbot_active_problem');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  })();
 
   const userAvatar = user?.username
     ? user.username.substring(0, 2).toUpperCase()
@@ -123,8 +134,8 @@ export default function Chat() {
     try {
       const res = await getHint(API, problemContext.slug, sessionId);
       const stageText = res.data.stage === 6
-        ? "🌟 **Editorial & Solution (Stage 6)**:\n"
-        : `💡 **Hint ${res.data.stage} of 6**:\n`;
+        ? "**Editorial & Solution (Stage 6)**:\n"
+        : `**Hint ${res.data.stage} of 6**:\n`;
 
       setMessages([...newMessages, { role: 'assistant', content: stageText + res.data.hint }]);
     } catch (err) {
@@ -152,7 +163,7 @@ export default function Chat() {
 
     try {
       const res = await analyzeComplexity(API, code);
-      const analysisReply = `📊 **Complexity Analysis**:\n\n**Time Complexity**: ${res.data.time_complexity}\n**Space Complexity**: ${res.data.space_complexity}\n\n**Explanation**: ${res.data.explanation}`;
+      const analysisReply = `**Complexity Analysis**:\n\n**Time Complexity**: ${res.data.time_complexity}\n**Space Complexity**: ${res.data.space_complexity}\n\n**Explanation**: ${res.data.explanation}`;
       setMessages([...newMessages, { role: 'assistant', content: analysisReply }]);
     } catch {
       setMessages([...newMessages, { role: 'assistant', content: 'Failed to analyze complexity. Please try again.' }]);
@@ -202,41 +213,37 @@ export default function Chat() {
         <p className="chat-subtitle">Powered by Gemini AI</p>
 
         {/* Action Buttons for Contextual Tools */}
-        <div className="chat-header-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="chat-header-actions">
           {problemContext.slug && sessionId && (
             <button
               onClick={handleGetHint}
               disabled={loading}
-              className="action-btn hint-btn"
-              style={{ padding: '0.4rem 0.8rem', background: 'rgba(255, 161, 22, 0.15)', color: '#ffa116', border: '1px solid #ffa116', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+              className="action-btn action-btn--hint"
             >
-              💡 Next Hint
+              Next Hint
             </button>
           )}
           <button
             onClick={handleAnalyzeComplexity}
             disabled={loading || !input.trim()}
-            className="action-btn complexity-btn"
-            style={{ padding: '0.4rem 0.8rem', background: 'rgba(0, 184, 163, 0.15)', color: '#00b8a3', border: '1px solid #00b8a3', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+            className="action-btn action-btn--complexity"
             title="Type or paste code in the input below, then click here!"
           >
-            📊 Analyze Complexity
+            Analyze Complexity
           </button>
           {problemContext.slug && (
             <>
               <button
                 onClick={handleMarkSolved}
-                className="action-btn"
-                style={{ padding: '0.4rem 0.8rem', background: 'rgba(0, 184, 163, 0.15)', color: '#00b8a3', border: '1px solid #00b8a3', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+                className="action-btn action-btn--solved"
               >
-                ✅ Mark Solved
+                Mark Solved
               </button>
               <button
                 onClick={handleMarkAttempted}
-                className="action-btn"
-                style={{ padding: '0.4rem 0.8rem', background: 'rgba(255, 192, 30, 0.15)', color: '#ffc01e', border: '1px solid #ffc01e', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}
+                className="action-btn action-btn--attempted"
               >
-                🔄 Mark Attempted
+                Mark Attempted
               </button>
             </>
           )}
