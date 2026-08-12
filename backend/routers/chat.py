@@ -1,8 +1,8 @@
-import logging
-import re
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
+import logging
+import re
 
 from backend.auth.dependencies import get_current_user
 from backend.config import settings
@@ -12,6 +12,7 @@ from langchain_chroma import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from backend.db import get_db, get_chroma
+from backend.retriever import retrieve_and_rerank
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def _is_off_topic(text: str) -> bool:
     return bool(_OFF_TOPIC_PATTERNS.search(text))
 
 
-def _build_system_prompt(
+async def _build_system_prompt(
     req: ChatRequest,
     db: Database,
     chroma: Chroma | None,
@@ -117,16 +118,21 @@ def _build_system_prompt(
         if hint_1:
             base += f"\n### Hint 1 (reveal only if the user asks for a hint)\n{hint_1}\n"
 
-    # ── RAG fallback: try to detect which problem the user is asking about ───
+    # ── RAG fallback: retrieve and rerank to find the most relevant problem ──
     else:
         last_user_msg = next(
             (m.content for m in reversed(req.messages) if m.role == "user"), None
         )
         if last_user_msg and chroma is not None:
             try:
-                docs = chroma.similarity_search(query=last_user_msg, k=1)
+                # top_n=1 — we only need the single best match for slug detection
+                docs = await retrieve_and_rerank(
+                    query=last_user_msg,
+                    chroma=chroma,
+                    top_n=1,
+                )
             except Exception as exc:
-                logger.warning("Chroma similarity search failed: %s", exc)
+                logger.warning("Reranked retrieval failed in chat: %s", exc)
                 docs = []
 
             if docs:
@@ -150,7 +156,7 @@ def _build_system_prompt(
 
 
 @router.post("", response_model=ChatResponse)
-def chat(
+async def chat(
     req: ChatRequest,
     current_user: dict = Depends(get_current_user),
     db: Database = Depends(get_db),
@@ -169,9 +175,9 @@ def chat(
     # ── Build system prompt ───────────────────────────────────────────────────
     # chroma dependency raises RuntimeError if unavailable; catch and degrade
     try:
-        system_prompt = _build_system_prompt(req, db, chroma)
+        system_prompt = await _build_system_prompt(req, db, chroma)
     except RuntimeError:
-        system_prompt = _build_system_prompt(req, db, None)
+        system_prompt = await _build_system_prompt(req, db, None)
 
     # ── Trim history to avoid token bloat ────────────────────────────────────
     # Keep only the tail of the conversation (most recent turns)
