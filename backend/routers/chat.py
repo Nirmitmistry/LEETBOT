@@ -173,12 +173,14 @@ async def chat(
         return ChatResponse(reply=_ALLOWED_TOPICS_HINT)
 
     # ── Build system prompt ───────────────────────────────────────────────────
+    # chroma dependency raises RuntimeError if unavailable; catch and degrade
     try:
         system_prompt = await _build_system_prompt(req, db, chroma)
     except RuntimeError:
         system_prompt = await _build_system_prompt(req, db, None)
 
     # ── Trim history to avoid token bloat ────────────────────────────────────
+    # Keep only the tail of the conversation (most recent turns)
     trimmed = req.messages[-(_MAX_HISTORY_TURNS * 2):]
 
     # ── Build LangChain message list ──────────────────────────────────────────

@@ -124,8 +124,12 @@ class _Settings:
     def RERANKER_THRESHOLD(self) -> float:
         """
         Minimum rerank score to keep a chunk.
-        Local CrossEncoder outputs raw logits (~[-10, 10]); -5.0 is conservative.
-        Cohere returns scores in [0, 1]; set to ~0.05 when using Cohere.
+        - Local CrossEncoder (BAAI/bge-reranker-large) outputs raw logits,
+          typically in the range [-10, 10]. A threshold of -5.0 drops clearly
+          irrelevant chunks while keeping anything marginally useful.
+        - Cohere Rerank returns scores in [0, 1]; a threshold of 0.05 is
+          similarly conservative.
+        Set per-backend in your .env file.
         """
         return float(os.getenv("RERANKER_THRESHOLD", "-5.0"))
 
