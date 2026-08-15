@@ -129,6 +129,7 @@ async def _build_system_prompt(
                 docs = await retrieve_and_rerank(
                     query=last_user_msg,
                     chroma=chroma,
+                    db=db,
                     top_n=1,
                 )
             except Exception as exc:

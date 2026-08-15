@@ -66,6 +66,19 @@ async def connect_db() -> None:
             settings.CHROMA_COLLECTION,
             count,
         )
+
+        # ── BM25 sparse index (built from the same Chroma corpus) ─────────────
+        if settings.HYBRID_RETRIEVAL:
+            try:
+                from backend.rag.bm25_index import warm_bm25_index
+                n_indexed = warm_bm25_index(_chroma)
+                logger.info("BM25 sparse index ready — %d chunks", n_indexed)
+            except RuntimeError as exc:
+                # rank_bm25 not installed — hybrid will degrade gracefully
+                logger.warning("BM25 warm-up skipped (rank_bm25 not installed?): %s", exc)
+            except Exception as exc:
+                logger.warning("BM25 warm-up failed (non-fatal): %s", exc)
+
     except Exception as exc:
         logger.warning("Chroma initialisation failed (non-fatal): %s", exc)
         _chroma = None

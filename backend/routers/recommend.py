@@ -100,6 +100,7 @@ async def recommend_problems(
         chroma_docs = await retrieve_and_rerank(
             query=source.get("problem_statement", body.slug),
             chroma=chroma,
+            db=db,
             chroma_filter={"hint_stage": 0},
         )
     except Exception:

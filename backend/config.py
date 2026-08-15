@@ -143,6 +143,33 @@ class _Settings:
         """Required when RERANKER_BACKEND=cohere."""
         return os.getenv("COHERE_API_KEY", "")
 
+    # ── Hybrid retrieval ──────────────────────────────────────────────────────
+    @property
+    def HYBRID_RETRIEVAL(self) -> bool:
+        """
+        Enable BM25 sparse retrieval leg in addition to dense Chroma search.
+        Set to 'false' to fall back to dense-only (useful for A/B testing).
+        """
+        return os.getenv("HYBRID_RETRIEVAL", "true").lower() in ("1", "true", "yes")
+
+    @property
+    def QUERY_TRANSFORM(self) -> bool:
+        """
+        Enable query transformation (HyDE for vague queries, multi-query
+        reformulation for specific queries) before retrieval.
+        Set to 'false' to pass the raw query directly (useful for A/B testing).
+        """
+        return os.getenv("QUERY_TRANSFORM", "true").lower() in ("1", "true", "yes")
+
+    @property
+    def HYBRID_CANDIDATE_K(self) -> int:
+        """
+        Total candidate documents returned by hybrid retrieval before reranking.
+        Should be larger than RERANKER_CANDIDATE_K to give the reranker more
+        material when both dense and sparse legs are active.
+        """
+        return int(os.getenv("HYBRID_CANDIDATE_K", "30"))
+
 
 # Single shared instance imported everywhere
 settings = _Settings()
