@@ -170,6 +170,34 @@ class _Settings:
         """
         return int(os.getenv("HYBRID_CANDIDATE_K", "30"))
 
+    # ── Semantic cache (Redis + RedisVL) ──────────────────────────────────────
+
+    @property
+    def REDIS_URL(self) -> str:
+        """
+        Redis connection URL.  Defaults to a local Redis instance.
+        Set to a Redis Cloud / ElastiCache URL in production.
+        """
+        return os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+    @property
+    def SEMANTIC_CACHE_THRESHOLD(self) -> float:
+        """
+        Minimum cosine similarity (0–1) for a cache hit.
+        Only queries with similarity ≥ this value trigger a cache return.
+        Default 0.92 — high precision, low false-positive rate.
+        """
+        return float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.92"))
+
+    @property
+    def SEMANTIC_CACHE_TTL_S(self) -> int:
+        """
+        TTL in seconds for cached hint entries.
+        Default: 7 days (604800 s).  Problem content / hints may be
+        refined over time, so entries should expire rather than live forever.
+        """
+        return int(os.getenv("SEMANTIC_CACHE_TTL_S", "604800"))
+
 
 # Single shared instance imported everywhere
 settings = _Settings()
