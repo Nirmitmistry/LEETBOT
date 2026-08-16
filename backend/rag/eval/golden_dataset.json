@@ -1,0 +1,122 @@
+{
+  "version": "1.0",
+  "entries": [
+    {
+      "id": "two-sum-vague-1",
+      "problem_id": "1",
+      "slug": "two-sum",
+      "question": "i'm stuck on this one",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["1_statement", "1_hint_1"],
+      "ground_truth_answer": "For Two Sum, fix one number x and look up (target - x) in a hash map. Iterate once, storing each number you've seen in the map. When you find the complement already stored, return the two indices. Time complexity O(n), space O(n)."
+    },
+    {
+      "id": "two-sum-vague-2",
+      "problem_id": "1",
+      "slug": "two-sum",
+      "question": "help me, no idea where to start",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["1_statement", "1_hint_1", "1_hint_2"],
+      "ground_truth_answer": "Start by thinking about what information you need to check quickly for each element. For each number x in the array, you need to know if (target - x) exists. A hash map lets you do that check in O(1) instead of scanning the whole array again."
+    },
+    {
+      "id": "two-sum-precise-1",
+      "problem_id": "1",
+      "slug": "two-sum",
+      "question": "Why does using a hash map reduce Two Sum from O(n^2) to O(n)?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["1_statement", "1_hint_2"],
+      "ground_truth_answer": "The brute-force approach checks every pair, giving O(n^2). With a hash map, each lookup is O(1) amortised, so a single pass through the array suffices — you check whether the complement (target - nums[i]) is already in the map and insert nums[i] if not. Total work is O(n) time with O(n) extra space."
+    },
+    {
+      "id": "two-sum-precise-2",
+      "problem_id": "1",
+      "slug": "two-sum",
+      "question": "How do I handle duplicate values in Two Sum without returning the same index twice?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["1_statement"],
+      "ground_truth_answer": "Process elements left-to-right. Before inserting nums[i] into the map, first check if the complement already exists. That way you only match against previously seen indices — never the same index twice. The problem guarantees exactly one valid answer, so you won't need to worry about multiple pairs."
+    },
+    {
+      "id": "longest-substring-vague-1",
+      "problem_id": "3",
+      "slug": "longest-substring-without-repeating-characters",
+      "question": "lost on this string problem",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["3_statement", "3_hint_1"],
+      "ground_truth_answer": "Longest Substring Without Repeating Characters is solved with a sliding window. Maintain a left and right pointer and a set (or map) of characters in the current window. When you encounter a character already in the window, advance the left pointer until the duplicate is removed, then extend the right pointer."
+    },
+    {
+      "id": "longest-substring-vague-2",
+      "problem_id": "3",
+      "slug": "longest-substring-without-repeating-characters",
+      "question": "confused, how to approach",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["3_statement", "3_hint_1"],
+      "ground_truth_answer": "Think of a window that slides over the string. Keep expanding it to the right as long as no character repeats. When a repeat appears, shrink from the left. Track the maximum window length you've seen. A hash map from character to its most-recent index lets you jump the left pointer directly instead of shrinking one step at a time."
+    },
+    {
+      "id": "longest-substring-precise-1",
+      "problem_id": "3",
+      "slug": "longest-substring-without-repeating-characters",
+      "question": "What data structure tracks the sliding window state most efficiently for Longest Substring Without Repeating Characters?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["3_statement"],
+      "ground_truth_answer": "A hash map from character to its latest index is most efficient. It lets you jump the left pointer directly to (last_seen_index + 1) instead of advancing one step at a time, reducing the number of left-pointer moves. A plain set also works but may require multiple advances. Both give O(n) time and O(min(n, alphabet_size)) space."
+    },
+    {
+      "id": "3sum-vague-1",
+      "problem_id": "15",
+      "slug": "3sum",
+      "question": "no clue how to solve this",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["15_statement", "15_hint_1"],
+      "ground_truth_answer": "3Sum reduces to Two Sum. Sort the array first. Fix one element nums[i] and run the classic two-pointer Two Sum on the remaining subarray to find pairs that sum to -nums[i]. Skip duplicate values of nums[i] and of the two pointers to avoid duplicate triplets."
+    },
+    {
+      "id": "3sum-vague-2",
+      "problem_id": "15",
+      "slug": "3sum",
+      "question": "stuck, hint please",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["15_statement", "15_hint_1", "15_hint_2"],
+      "ground_truth_answer": "Fix one number by iterating with index i. Then use left = i+1 and right = n-1 pointers. Move them inward: if the three-way sum is too large, decrement right; if too small, increment left; if zero, record the triplet and advance both pointers while skipping duplicates."
+    },
+    {
+      "id": "3sum-precise-1",
+      "problem_id": "15",
+      "slug": "3sum",
+      "question": "How do you avoid duplicate triplets in 3Sum without using a set?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["15_statement", "15_hint_1"],
+      "ground_truth_answer": "Sort the array. When iterating the outer index i, skip if nums[i] == nums[i-1] (same value was already the pivot). After finding a valid triplet with two pointers, advance left while nums[left] == nums[left+1] and decrement right while nums[right] == nums[right-1] before the next iteration. This eliminates duplicates in O(1) extra space versus a set."
+    },
+    {
+      "id": "maximum-subarray-vague-1",
+      "problem_id": "53",
+      "slug": "maximum-subarray",
+      "question": "not sure what to do here",
+      "query_type": "vague",
+      "expected_context_chunk_ids": ["53_statement"],
+      "ground_truth_answer": "Maximum Subarray is the classic Kadane's algorithm problem. Traverse the array keeping a running sum. Whenever the running sum goes negative, reset it to zero (starting fresh). At each step, update a global maximum. The key insight is: a negative prefix can only hurt any extension of it, so discard it."
+    },
+    {
+      "id": "maximum-subarray-precise-1",
+      "problem_id": "53",
+      "slug": "maximum-subarray",
+      "question": "What is the recurrence relation behind Kadane's algorithm for Maximum Subarray?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["53_statement"],
+      "ground_truth_answer": "Define dp[i] as the maximum subarray sum ending at index i. The recurrence is: dp[i] = max(nums[i], dp[i-1] + nums[i]). Either extend the previous subarray or start anew at nums[i], whichever is larger. The answer is max(dp[0..n-1]). Because dp[i] only depends on dp[i-1] we can reduce space to O(1) by keeping a single variable."
+    },
+    {
+      "id": "maximum-subarray-precise-2",
+      "problem_id": "53",
+      "slug": "maximum-subarray",
+      "question": "What is the divide and conquer approach for Maximum Subarray and how does it differ in complexity from Kadane's?",
+      "query_type": "precise",
+      "expected_context_chunk_ids": ["53_statement"],
+      "ground_truth_answer": "Divide the array at the midpoint. The maximum subarray either lies entirely in the left half, entirely in the right half, or crosses the midpoint. The crossing subarray's sum is computed by expanding outward from the midpoint in O(n). Combine the three candidates for the answer. Recurrence: T(n) = 2T(n/2) + O(n), which solves to O(n log n) — slower than Kadane's O(n) but illustrates divide and conquer."
+    }
+  ]
+}

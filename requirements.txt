@@ -30,3 +30,7 @@ bcrypt==4.0.1
 # ── Semantic cache (SSE + Redis) ──────────────────────────────────────────────
 redis==5.2.1
 redisvl==0.3.9
+
+# ── RAG evaluation harness ────────────────────────────────────────────────────
+ragas==0.2.15
+datasets==2.21.0
