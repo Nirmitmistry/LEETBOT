@@ -66,7 +66,7 @@ import logging
 from functools import lru_cache
 from typing import Optional
 
-import google.generativeai as genai  # type: ignore
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from backend.config import settings
 
@@ -183,8 +183,10 @@ class _GeminiVectorizer:
     """
 
     def __init__(self) -> None:
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        # Probe embedding dimensions once so ``.dims`` is available immediately.
+        self._embedder = GoogleGenerativeAIEmbeddings(
+            model=settings.GEMINI_EMBEDDING_MODEL,
+            google_api_key=settings.GEMINI_API_KEY,
+        )
         self._dims: int | None = None
 
     # -- interface required by RedisVL ----------------------------------------
@@ -192,32 +194,15 @@ class _GeminiVectorizer:
     @property
     def dims(self) -> int:
         if self._dims is None:
-            # Lazily determine dims on first use
-            sample = self._embed_sync("probe")
+            sample = self._embedder.embed_query("probe")
             self._dims = len(sample)
         return self._dims
 
     def embed(self, text: str) -> list[float]:
-        return self._embed_sync(text)
+        return self._embedder.embed_query(text)
 
     def embed_many(self, texts: list[str]) -> list[list[float]]:
-        result = genai.embed_content(
-            model=settings.GEMINI_EMBEDDING_MODEL,
-            content=texts,
-        )
-        return [list(v) for v in result["embedding"]]
-
-    # -- internal helpers ------------------------------------------------------
-
-    def _embed_sync(self, text: str) -> list[float]:
-        result = genai.embed_content(
-            model=settings.GEMINI_EMBEDDING_MODEL,
-            content=text,
-        )
-        embedding = result.get("embedding")
-        if embedding is None:
-            raise RuntimeError("Gemini embed_content returned no embedding field")
-        return list(embedding)
+        return self._embedder.embed_documents(texts)
 
 
 # ---------------------------------------------------------------------------

@@ -31,7 +31,8 @@ from __future__ import annotations
 import logging
 import re
 
-import google.generativeai as genai  # type: ignore
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
 
 from backend.config import settings
 
@@ -69,23 +70,22 @@ def is_vague_query(text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# LLM helpers (async, Gemini)
+# LLM helpers (async, Gemini via langchain-google-genai)
 # ---------------------------------------------------------------------------
 
-def _get_gemini_model() -> genai.GenerativeModel:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    return genai.GenerativeModel(settings.GEMINI_MODEL_NAME)
+def _get_llm() -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
+        model=settings.GEMINI_MODEL_NAME,
+        google_api_key=settings.GEMINI_API_KEY,
+        temperature=0.3,
+    )
 
 
 async def generate_hyde(query: str) -> str:
     """
     Generate a short *hypothetical answer* for a vague query.
 
-    The returned string is the text to embed (instead of the raw query) for
-    dense retrieval, and also passed as a query to BM25 sparse retrieval.
-
-    Falls back to the original query on any LLM error so retrieval is never
-    blocked by a transformer call failure.
+    Falls back to the original query on any LLM error.
     """
     prompt = (
         "You are helping a student practising LeetCode problems.\n"
@@ -97,9 +97,9 @@ async def generate_hyde(query: str) -> str:
     ).format(query=query)
 
     try:
-        model = _get_gemini_model()
-        response = await model.generate_content_async(prompt)
-        text = (response.text or "").strip()
+        llm = _get_llm()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        text = (response.content or "").strip()
         if not text:
             raise ValueError("Empty HyDE response")
         logger.debug("HyDE generated (%d chars) for query: %r", len(text), query[:60])
@@ -113,14 +113,7 @@ async def generate_multi_query(query: str, n: int = 3) -> list[str]:
     """
     Generate *n* semantically varied reformulations of *query*.
 
-    Returns a list that always includes the *original* query so the caller
-    can simply iterate the returned list without special-casing the original.
-    Falls back to ``[query]`` (single item) on LLM error.
-
-    Parameters
-    ----------
-    query : The original user question.
-    n     : Number of *additional* reformulations to request (2 or 3).
+    Always includes the original query. Falls back to ``[query]`` on error.
     """
     prompt = (
         "You are helping improve a semantic search system for LeetCode problems.\n"
@@ -131,14 +124,13 @@ async def generate_multi_query(query: str, n: int = 3) -> list[str]:
     ).format(query=query, n=n)
 
     try:
-        model = _get_gemini_model()
-        response = await model.generate_content_async(prompt)
-        raw = (response.text or "").strip()
+        llm = _get_llm()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = (response.content or "").strip()
         if not raw:
             raise ValueError("Empty multi-query response")
 
         lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
-        # Always keep the original query; deduplicate while preserving order
         seen: set[str] = {query.strip()}
         reformulations: list[str] = [query]
         for line in lines:
@@ -151,7 +143,7 @@ async def generate_multi_query(query: str, n: int = 3) -> list[str]:
             len(reformulations) - 1,
             query[:60],
         )
-        return reformulations[:n + 1]  # original + at most n extras
+        return reformulations[:n + 1]
 
     except Exception as exc:
         logger.warning("Multi-query generation failed — using raw query only: %s", exc)

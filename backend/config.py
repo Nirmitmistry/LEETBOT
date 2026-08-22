@@ -46,7 +46,8 @@ class _Settings:
 
     @property
     def GEMINI_EMBEDDING_MODEL(self) -> str:
-        return os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
+        # Strip surrounding whitespace — .env values sometimes have trailing spaces
+        return os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001").strip()
 
     @property
     def GEMINI_EMBED_BATCH_SIZE(self) -> int:
@@ -57,10 +58,11 @@ class _Settings:
     def GEMINI_MODEL_NAME(self) -> str:
         return os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
 
-    # ── OpenAI (Ingestion Embeddings) ─────────────────────────────────────────
+    # ── OpenAI (optional — no longer used by ingestion or backend) ───────────
     @property
     def OPENAI_API_KEY(self) -> str:
-        return _require("OPENAI_API_KEY")
+        """Optional. Not used by the ingestion or backend pipelines."""
+        return os.getenv("OPENAI_API_KEY", "")
 
     @property
     def OPENAI_EMBEDDING_MODEL(self) -> str:
@@ -97,7 +99,10 @@ class _Settings:
     # ── Ingestion ─────────────────────────────────────────────────────────────
     @property
     def INGESTION_BATCH_SIZE(self) -> int:
-        return int(os.getenv("INGESTION_BATCH_SIZE", "50"))
+        # Default 10 problems/batch (~60 chunks) to stay under Gemini free-tier
+        # rate limit of 100 embedContent requests/minute.
+        # Increase to 50 if you have a paid API key.
+        return int(os.getenv("INGESTION_BATCH_SIZE", "10"))
 
     # ── Reranker ──────────────────────────────────────────────────────────────
     @property

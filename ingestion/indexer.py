@@ -8,7 +8,7 @@ doc_id matches before inserting the new ones.  This allows re-ingestion
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 
 load_dotenv()
@@ -16,7 +16,7 @@ load_dotenv()
 from backend.config import settings  # noqa: E402
 
 
-def get_vectorstore(embedder: OpenAIEmbeddings) -> Chroma:
+def get_vectorstore(embedder: GoogleGenerativeAIEmbeddings) -> Chroma:
     return Chroma(
         collection_name=settings.CHROMA_COLLECTION,
         embedding_function=embedder,

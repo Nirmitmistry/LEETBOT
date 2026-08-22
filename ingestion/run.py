@@ -34,6 +34,23 @@ from ingestion.chunker import chunk_problem
 from ingestion.embedder import get_embedder
 from ingestion.indexer import get_vectorstore, upsert_documents, collection_stats
 
+# Sanity-check: ensure the embedding model name is clean (no trailing spaces)
+_embed_model = settings.GEMINI_EMBEDDING_MODEL.strip()
+if _embed_model != settings.GEMINI_EMBEDDING_MODEL:
+    import os
+    os.environ["GEMINI_EMBEDDING_MODEL"] = _embed_model
+    print(f"  [warning] GEMINI_EMBEDDING_MODEL had leading/trailing spaces — stripped to '{_embed_model}'")
+
+# ---------------------------------------------------------------------------
+# Gemini free-tier rate limit: 100 requests/minute per model per user.
+# Each batch of 50 problems produces ~300 chunks, which langchain sends as
+# multiple embed_documents() calls in batches of GEMINI_EMBED_BATCH_SIZE.
+# We pause between problem-batches to stay under the per-minute cap.
+# ---------------------------------------------------------------------------
+_BATCH_DELAY_S: float = float(
+    __import__("os").getenv("INGESTION_BATCH_DELAY_S", "65")
+)  # seconds to sleep between Chroma upsert batches; 65s safely under 100 req/min
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="LEETBOT ingestion pipeline")
@@ -176,6 +193,11 @@ def _process_batch(
             f"  Indexed problems {processed + 1}–{end}/{total} "
             f"({len(all_chunks)} chunks upserted)"
         )
+        # Rate-limit guard: pause so we don't exceed Gemini free-tier quota
+        # (100 embedContent requests/min). Skip delay after the final batch.
+        if end < total and _BATCH_DELAY_S > 0:
+            print(f"  [rate limit] sleeping {_BATCH_DELAY_S:.0f}s …")
+            time.sleep(_BATCH_DELAY_S)
     except Exception as e:
         print(f"  [upsert error] batch starting at {processed + 1}: {e}")
 
